@@ -4,6 +4,12 @@ The adapter is an ESP32 with its built-in CAN controller (TWAI, ESPHome platform
 
 ![Wiring ESP32 + SN65HVD230](./wiring-sn65hvd230.svg)
 
+### The finished adapter (reference build)
+
+<img src="Pictures/Hardware_wiring.jpg" alt="Finished adapter in a junction box" width="480">
+
+Left to right: the **SN65HVD230** module (screw terminal CANH/CANL at the top), the **LM2596** buck converter (set to 3.3 V, extra 100 µF capacitor on its output), the **ESP32** board. Lever connectors (Wago) distribute 3.3 V and GND. The green shielded cable comes from the pump (pair 1: CAN-H/CAN-L, pair 2: 12 V/GND). Everything sits in a small junction box on the wall next to the pump, outside the metal housing, where Wi-Fi reception is good.
+
 ## Parts list
 
 | # | Part | Notes |

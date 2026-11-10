@@ -20,6 +20,12 @@ No cloud, no KM200, no changes to the pump. The firmware only **reads**.
 
 ---
 
+## What it looks like
+
+| Home Assistant dashboard | | | The adapter |
+|---|---|---|---|
+| <img src="docs/Pictures/HA_example_1.png" width="200" alt="Status, hot water, energy"> | <img src="docs/Pictures/HA_example_2.png" width="200" alt="Counters and COP"> | <img src="docs/Pictures/HA_example_3.png" width="200" alt="Heating curve and 24 h history"> | <img src="docs/Pictures/Hardware_wiring.jpg" width="220" alt="ESP32 + SN65HVD230 + buck converter"> |
+
 ## How it works
 
 ```

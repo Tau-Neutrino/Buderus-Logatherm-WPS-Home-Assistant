@@ -49,6 +49,13 @@ The entity ID is derived from the `label` in `tools/monitor_params.csv`:
 | **Heizkurve** | The heating curve as configured in the pump, with today's operating point |
 | **Letzte 24 Stunden** | History graphs of temperatures and states |
 
+Screenshots of the reference installation (phone, dark theme):
+
+| Status, hot water, energy | Counters and COP | Heating curve, last 24 h |
+|---|---|---|
+| <img src="Pictures/HA_example_1.png" alt="Status, hot water gauge, energy donuts, heat per day" width="260"> | <img src="Pictures/HA_example_2.png" alt="Runtimes, starts, COP per day" width="260"> | <img src="Pictures/HA_example_3.png" alt="Heating curve with switching band, 24 h history" width="260"> |
+| Compressor, mode, flow with setpoint, brine. Hot water gauge with start/stop range. Heat produced: lifetime, today, per day. | Runtimes and starts for heating and hot water. Estimated COP per day. | The heating curve with today's operating point and the current start/stop band. Temperatures and operating mode over 24 h. |
+
 ### Requirements
 
 - **HACS** with the frontend card **[plotly-graph-card](https://github.com/dbuezas/lovelace-plotly-graph-card)** (v3 or later). All other cards are built in.

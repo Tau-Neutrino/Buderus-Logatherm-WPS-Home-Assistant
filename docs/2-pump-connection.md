@@ -31,7 +31,16 @@ Connect the adapter to the **CAN-BUS connector on the PEL board**, the same plac
 1. Switch the pump off at the breaker and wait a few minutes.
 2. Open the front cover and the electrical box. The PEL board is in the electrical box (manual, figure 33 "Übersicht Leiterplatte", variant a) for WPS K-1).
 3. Find the 4-pole CAN connector and the **Term** switch next to it. **Read the markings on your board** for +12 V, GND, CAN-H, CAN-L and write them down. Don't rely on positions in photos from other pumps.
-4. Run your cable through a free cable gland, away from mains cables (≥ 100 mm), and connect it:
+4. Run your cable through a free cable gland, away from mains cables (≥ 100 mm), and connect it.
+
+On the reference WPS 8K-1 it looks like this:
+
+| Electrical box with the adapter cable | Detail: connection on the board |
+|---|---|
+| <img src="Pictures/wiring_inside.jpg" alt="Opened electrical box of the WPS 8K-1" width="380"> | <img src="Pictures/wiring_inside_detail.jpg" alt="Adapter cable on the 4-pole terminal" width="380"> |
+| Mains terminal strip on the left (**230/400 V, stay away**). The green shielded cable enters at the right and runs down to the boards. | The four wires (red, yellow, white, black) go into the black **4-pole terminal 35–38**. The shield is folded back and taped at this end. Check the 12 V/GND/CAN-H/CAN-L assignment on **your** board's markings or the wiring diagram before connecting. |
+
+Connections:
 
 | PEL CAN connector | Adapter |
 |---|---|

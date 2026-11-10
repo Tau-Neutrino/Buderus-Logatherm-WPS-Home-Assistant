@@ -397,8 +397,8 @@ sections:
             gridcolor: "rgba(128,128,128,0.25)"
       - type: markdown
         content: >-
-          ℹ️ **COP geschätzt** aus dem Datenblatt (Sole-Eintritt GT10, Vorlauf GT8), erst 5 min nach
-          Kompressorstart. ⚡ **Gemessene Arbeitszahl** folgt mit dem Shelly-3-Phasen-Zähler.
+          ℹ️ **COP geschätzt** aus dem Datenblatt (Sole-Eintritt GT10, Vorlauf GT8), erst 1 min nach
+          Kompressorstart bzw. Wechsel Heizen/Warmwasser. ⚡ **Gemessene Arbeitszahl** folgt mit dem Shelly-3-Phasen-Zähler.
 
   # ---------------------------------------------------------------- Heizkurve
   - type: grid
