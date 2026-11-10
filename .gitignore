@@ -1,0 +1,20 @@
+# ESPHome build output and local secrets
+esphome/.esphome/
+esphome/.venv/
+esphome/secrets.yaml
+
+# Local Home Assistant dashboard backups (contain your whole dashboard config)
+homeassistant/backups/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Third-party documents and code (copyrighted / separate license): download them yourself
+docs/*.pdf
+26_KM273*/
+
+# Ad-hoc logs (the reference table dump in data/ is kept on purpose)
+*.log
+!data/*.log

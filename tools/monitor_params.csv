@@ -1,0 +1,47 @@
+group;param;label;unit;scale;decimals;interval_s
+State;HW_COMPRESSOR;Compressor;;1;0;10
+State;HW_VXV;Diverter valve;;1;0;10
+Temperatures;GT1_TEMP;Heating flow GT1;°C;0.1;1;30
+Temperatures;GT3_TEMP;Hot water GT3;°C;0.1;1;30
+Temperatures;GT8_TEMP;Heat pump flow GT8;°C;0.1;1;10
+Temperatures;GT10_TEMP;Brine in GT10;°C;0.1;1;10
+Temperatures;GT11_TEMP;Brine out GT11;°C;0.1;1;30
+Temperatures;GT2_TEMP;Outdoor GT2;°C;0.1;1;60
+Temperatures;GT2_ATTENUATED_TEMP;Outdoor smoothed GT2;°C;0.1;1;60
+Heating control;HEATING_CURVE_VALUE;Flow setpoint;°C;0.1;1;30
+Heating control;HEATING_START;Heating start threshold;°C;0.1;1;30
+Heating control;HEATING_STOP;Heating stop threshold;°C;0.1;1;30
+Hot water;DHW_GT3_START_TEMP;Hot water start;°C;0.1;1;60
+Hot water;DHW_GT3_STOP_TEMP;Hot water stop;°C;0.1;1;60
+Hot water;DHW_CALCULATED_SETPOINT_TEMP;Hot water setpoint;°C;0.1;1;60
+Hot water;DHW_CALCULATED_SETPOINT_TEMP_OFFSET;Hot water setpoint offset;K;0.1;1;900
+Hot water;DHW_GT3_START_MAX_TEMP;Hot water start max T3;°C;0.1;1;60
+Hot water;DHW_GT3_START_TEMP_ECONOMY;Hot water start economy;°C;0.1;1;60
+Hot water;DHW_GT8_STOP_TEMP;Hot water stop at GT8;°C;0.1;1;60
+Hot water;DHW_GT8_STOP_TEMP_ECONOMY;Hot water stop GT8 economy;°C;0.1;1;60
+Hot water;DHW_GT8_STOP_MAX_TEMP;Hot water stop max T8;°C;0.1;1;60
+Hot water;DHW_CALCULATED_E21_T3_START_TEMP_SEC_PER_TENTH_ADJ;Hot water start rise s per 0.1K;s;1;0;60
+Hot water;DHW_CALCULATED_T3_DHW_LOADING_INTERVAL;Hot water loading interval;;1;0;60
+Hot water;DHW_CALCULATED_T3_START_TEMP_MIN_VALUE;Hot water start min value;;1;0;60
+Hot water;TIMER_DHW_E21_T3_START_TEMP_ADJ;Hot water start rise timer;;1;0;60
+Statistics;STATS_ENERGY_OUTPUT_HEATING;Heat produced heating;kWh;0.01;0;300
+Statistics;STATS_ENERGY_OUTPUT_DHW;Heat produced hot water;kWh;0.01;0;300
+Statistics;STATS_COMPRESSOR_HEATING;Compressor runtime heating;h;0.000277777778;0;300
+Statistics;STATS_COMPRESSOR_DHW;Compressor runtime hot water;h;0.000277777778;0;300
+Statistics;STATS_COMPRESSOR_START_HEATING;Compressor starts heating;;1;0;300
+Statistics;STATS_COMPRESSOR_START_DHW;Compressor starts hot water;;1;0;300
+Heating curve;HEATING_CURVE_LEFT_Y_LOCAL;Heating curve left point (without offset);°C;0.1;1;900
+Heating curve;HEATING_CURVE_RIGHT_Y_LOCAL;Heating curve right point (without offset);°C;0.1;1;900
+Heating curve;HEATING_CURVE_PARALLEL_OFFSET;Heating curve offset;K;0.1;1;900
+Heating curve;HEATING_CURVE_RIGHT_X_LOCAL;Heating curve right point outdoor temp;°C;0.1;1;900
+Heating curve;HEATING_CURVE_MIN_LOCAL;Heating curve min;°C;0.1;1;900
+Heating curve;HEATING_CURVE_MAX_LOCAL;Heating curve max;°C;0.1;1;900
+Heating curve;HEATING_CURVE_NO_OF_POINTS;Heating curve number of points;;1;0;900
+Heating curve;HEATING_CURVE_Y1_LOCAL;Heating curve adjustment point 1;K;0.1;1;900
+Heating curve;HEATING_CURVE_Y2_LOCAL;Heating curve adjustment point 2;K;0.1;1;900
+Heating curve;HEATING_CURVE_Y3_LOCAL;Heating curve adjustment point 3;K;0.1;1;900
+Heating curve;HEATING_CURVE_Y4_LOCAL;Heating curve adjustment point 4;K;0.1;1;900
+Heating curve;HEATING_CURVE_Y5_LOCAL;Heating curve adjustment point 5;K;0.1;1;900
+Heating curve;HEATING_CURVE_Y6_LOCAL;Heating curve adjustment point 6;K;0.1;1;900
+Heating curve;HEATING_CURVE_Y7_LOCAL;Heating curve adjustment point 7;K;0.1;1;900
+Heating curve;HEATING_CURVE_Y8_LOCAL;Heating curve adjustment point 8;K;0.1;1;900

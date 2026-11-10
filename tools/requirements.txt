@@ -1,0 +1,4 @@
+# Python helpers in tools/ (the firmware itself only needs ESPHome).
+pyyaml>=6.0          # ha_dashboard.py
+websockets>=12.0     # ha_dashboard.py, ha_entities.py
+aioesphomeapi>=24.0  # esphome_press.py

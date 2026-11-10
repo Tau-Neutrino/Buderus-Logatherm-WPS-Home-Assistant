@@ -1,0 +1,94 @@
+# Service firmware: element table dump (e.g. after a software update of the pump).
+# Reads only: table size + table ranges, the same requests a KM200 / FHEM uses.
+# CAN runs in NORMAL mode (acknowledges and transmits). Flash buderus-wps-monitor.yaml back afterwards.
+# Capture with: esphome logs buderus-wps-dump.yaml > dump.log, press "Dump element table",
+# then: python tools/km273_parse.py dump.log
+substitutions:
+  name: buderus-wps
+  friendly_name: Buderus WPS
+  # 4 kB per request = 512 CAN frames; fits completely into the RX queue below.
+  chunk_size: "4096"
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  includes:
+    - km273_dump.h
+  on_boot:
+    priority: -100
+    then:
+      - lambda: km273::dumper.attach(id(can0), ${chunk_size});
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  baud_rate: 115200
+  logs:
+    canbus: INFO
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    password: !secret fallback_ap_password
+
+captive_portal:
+
+canbus:
+  - platform: esp32_can
+    id: can0
+    rx_pin: GPIO21
+    tx_pin: GPIO22
+    bit_rate: 125KBPS
+    mode: NORMAL
+    rx_queue_len: 512
+    can_id: 0x01FD7FE0
+    use_extended_id: true
+
+switch:
+  - platform: template
+    name: CAN sniffer log
+    icon: mdi:magnify-scan
+    optimistic: true
+    restore_mode: ALWAYS_ON
+    turn_on_action:
+      - lambda: km273::dumper.set_sniff(true);
+    turn_off_action:
+      - lambda: km273::dumper.set_sniff(false);
+
+sensor:
+  - platform: template
+    name: CAN frame rate
+    icon: mdi:swap-horizontal
+    unit_of_measurement: frames/s
+    state_class: measurement
+    accuracy_decimals: 2
+    entity_category: diagnostic
+    update_interval: 30s
+    lambda: return km273::dumper.report_stats();
+
+button:
+  - platform: template
+    name: Dump element table
+    entity_category: config
+    on_press:
+      - lambda: km273::dumper.start();
+  - platform: restart
+    name: Restart
+
+interval:
+  - interval: 10ms
+    then:
+      - lambda: km273::dumper.tick();
