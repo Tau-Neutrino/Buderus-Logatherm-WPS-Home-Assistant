@@ -141,8 +141,8 @@ Besides one sensor per CSV line, the generator adds:
 | **Hot water (display)** | GT3 + display offset (`DHW_CALCULATED_SETPOINT_TEMP_OFFSET`, factory 4 K). This is the value the pump's display shows as hot water temperature. |
 | **Heating curve left/right point (display)** | Heating curve end points including the parallel offset, as on the display |
 | **Estimated COP**, **… heating**, **… hot water** | COP estimated from the datasheet curves (brine in GT10, heat pump flow GT8). It is *unknown* when the compressor is off and for 60 s after a start or a heating↔hot water switch. |
-| **Operating mode** | `Standby`, `Heizen` or `Warmwasser`, from the compressor and the diverter valve |
-| **Flow with setpoint** | Text like `25,4 °C (Soll: 28,2 °C)` for a dashboard tile |
+| **Operating mode** | `Standby`, `Heating` or `Hot water`, from the compressor and the diverter valve. The texts are ESPHome substitutions (`mode_standby`, `mode_heating`, `mode_hot_water`, `mode_unknown`) at the top of the firmware file; change them there or override them when flashing, e.g. `esphome -s mode_heating Heizen -s mode_hot_water Warmwasser run buderus-wps-monitor.yaml`. |
+| **Flow with setpoint** | Text like `25.4 °C (set: 28.2 °C)` for a dashboard tile (substitutions `setpoint_label` and `decimal_separator`) |
 | **Compressor running** | Binary sensor (device class *running*) |
 | **CAN frame rate** | Diagnostics: received frames per second |
 | **CAN sniffer log** | Switch: logs every new/changed frame (off by default) |

@@ -14,7 +14,7 @@ python tools/ha_entities.py list buderus_wps
 
 ```
 sensor.haus_buderus_wps_hot_water_gt3        45.2   esphome   Hot water GT3
-sensor.haus_buderus_wps_operating_mode       Heizen esphome   Operating mode
+sensor.haus_buderus_wps_operating_mode       Heating esphome  Operating mode
 ...
 ```
 
@@ -26,7 +26,7 @@ The entity ID is derived from the `label` in `tools/monitor_params.csv`:
 
 | Label | Entity ID (prefix `sensor.<area>_buderus_wps_`) | Example |
 |---|---|---|
-| Operating mode | `…operating_mode` | `Heizen` / `Warmwasser` / `Standby` |
+| Operating mode | `…operating_mode` | `Heating` / `Hot water` / `Standby` |
 | Compressor running | `binary_sensor.…compressor_running` | `on` |
 | Heating flow GT1 | `…heating_flow_gt1` | 31.4 °C |
 | Flow setpoint | `…flow_setpoint` | 30.9 °C |
@@ -40,20 +40,20 @@ The entity ID is derived from the `label` in `tools/monitor_params.csv`:
 
 ## The dashboard
 
-[`homeassistant/wps-dashboard-view.yaml`](../homeassistant/wps-dashboard-view.yaml) is a complete dashboard **view** (type *sections*, German labels):
+[`homeassistant/wps-dashboard-view.yaml`](../homeassistant/wps-dashboard-view.yaml) is a complete dashboard **view** (type *sections*):
 
 | Section | Content |
 |---|---|
-| **Aktueller Status** | Tiles: compressor, operating mode, flow with setpoint, outdoor temperature. Hot water **gauge** with start/stop range and setpoint. |
-| **Energie** | Donut of the produced heat (heating vs. hot water, lifetime), a second donut for the **last 24 h**, heat and electricity **per day** |
-| **Arbeitszahl geschätzt (Datenblattkurven)** | COP estimated from the datasheet curves (brine in GT10, flow GT8): current value and mean per day |
-| **Arbeitszahl real (gemessen)** | Needs an electricity meter and the package below: power, electricity today, COP of the last run / today / per mode, measured COP per day |
-| **Heizkurve** | The heating curve as configured in the pump, with today's operating point |
-| **Letzte 24 Stunden** | History graph of the temperatures; **Betriebsdaten**: compressor runtime and starts, operating mode over 24 h |
+| **Current status** | Tiles: compressor, operating mode, flow with setpoint, outdoor temperature. Hot water **gauge** with start/stop range and setpoint. |
+| **Energy** | Donut of the produced heat (heating vs. hot water, lifetime), a second donut for the **last 24 h**, heat and electricity **per day** |
+| **COP estimated (datasheet curves)** | COP estimated from the datasheet curves (brine in GT10, flow GT8): current value and mean per day |
+| **COP measured** | Needs an electricity meter and the package below: power, electricity today, COP of the last run / today / per mode, measured COP per day |
+| **Heating curve** | The heating curve as configured in the pump, with today's operating point |
+| **Last 24 hours** | History graph of the temperatures; **Operating data**: compressor runtime and starts, operating mode over 24 h |
 
 Screenshots of the reference installation (phone, dark theme):
 
-| Status, hot water, energy | Heat 24 h and per day | Estimated and measured COP | Heating curve, Betriebsdaten |
+| Status, hot water, energy | Heat 24 h and per day | Estimated and measured COP | Heating curve, operating data |
 |---|---|---|---|
 | <img src="Pictures/HA_example_1.png" alt="Status, hot water gauge, lifetime heat donut" width="200"> | <img src="Pictures/HA_example_2.png" alt="Heat produced in the last 24 h, heat and electricity per day" width="200"> | <img src="Pictures/HA_example_3.png" alt="Estimated COP per day, measured power, electricity and COP" width="200"> | <img src="Pictures/HA_example_4.png" alt="Heating curve with switching band, compressor runtimes and starts" width="200"> |
 | Compressor, mode, flow with setpoint, brine. Hot water gauge with start/stop range. Heat produced over the pump's lifetime. | Heat produced in the last 24 h; heat and electricity per day. | COP estimated from the datasheet curves; measured power, electricity and COP (last run, today, per mode, per day). | The heating curve with today's operating point and the current start/stop band. Compressor runtimes and starts. (The 24 h history graphs are not shown.) |
@@ -78,7 +78,7 @@ Screenshots of the reference installation (phone, dark theme):
 
 2. **Either via the UI:** open a dashboard → ✏ Edit → **+ Add view** → open the new view's settings → ⋮ **Edit in YAML** → replace everything with the file's content → Save.
 
-3. **Or with the script** (replaces the view with the same `path: waermepumpe` in an existing dashboard and saves a backup of the whole dashboard to `homeassistant/backups/` first):
+3. **Or with the script** (replaces the view with the same `path: heat-pump` in an existing dashboard and saves a backup of the whole dashboard to `homeassistant/backups/` first):
 
    ```bash
    # once: create a long-lived access token (HA profile → Security) and store it
@@ -89,11 +89,11 @@ Screenshots of the reference installation (phone, dark theme):
    python tools/ha_dashboard.py push lovelace homeassistant/wps-dashboard-view.yaml
    ```
 
-   `lovelace` is the default dashboard; for another dashboard use its URL path. The view must already exist once (step 2 with only `path: waermepumpe`), then `push` keeps it up to date.
+   `lovelace` is the default dashboard; for another dashboard use its URL path. The view must already exist once (step 2 with only `path: heat-pump`), then `push` keeps it up to date.
 
 ### A compact card for another page
 
-[`homeassistant/keller-heatpump-card.yaml`](../homeassistant/keller-heatpump-card.yaml) is an example of a small status block (operating mode, flow, hot water, outdoor temperature) that links to the full view. It needs the HACS cards **button-card** and **card-mod**. Add it with *Add card → Manual*, and adapt the entity prefix as above.
+[`homeassistant/heatpump-status-card.yaml`](../homeassistant/heatpump-status-card.yaml) is an example of a small status block (operating mode, flow, hot water, outdoor temperature) that links to the full view. It needs the HACS cards **button-card** and **card-mod**. Add it with *Add card → Manual*, and adapt the entity prefix as above.
 
 ## Examples
 
@@ -101,7 +101,7 @@ Screenshots of the reference installation (phone, dark theme):
 
 ```yaml
 automation:
-  - alias: "Warmwasser niedrig"
+  - alias: "Hot water low"
     triggers:
       - trigger: numeric_state
         entity_id: sensor.buderus_wps_hot_water_display
@@ -110,7 +110,7 @@ automation:
     actions:
       - action: notify.notify
         data:
-          message: "Warmwasser nur noch {{ states('sensor.buderus_wps_hot_water_display') }} °C"
+          message: "Hot water only {{ states('sensor.buderus_wps_hot_water_display') }} °C"
 ```
 
 ### Count compressor starts per day
@@ -130,7 +130,7 @@ utility_meter:
 ```yaml
 template:
   - sensor:
-      - name: "WPS mittlere Laufzeit Heizen heute"
+      - name: "WPS average run time heating today"
         unit_of_measurement: "min"
         state: >
           {% set starts = states('sensor.wps_starts_heating_daily') | float(0) %}

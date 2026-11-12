@@ -3,6 +3,14 @@
 substitutions:
   name: buderus-wps
   friendly_name: Buderus WPS
+  # Texts of the "Operating mode" and "Flow with setpoint" sensors. Override them for another language,
+  # e.g. esphome -s mode_heating Heizen -s mode_hot_water Warmwasser ... run buderus-wps-monitor.yaml
+  mode_standby: Standby
+  mode_heating: Heating
+  mode_hot_water: Hot water
+  mode_unknown: Unknown
+  setpoint_label: set
+  decimal_separator: "."
 
 esphome:
   name: ${name}
@@ -530,11 +538,11 @@ text_sensor:
     update_interval: 10s
     lambda: |-
       const float c = id(p_hw_compressor).state, v = id(p_hw_vxv).state;
-      if (std::isnan(c)) return {"Unbekannt"};
-      if (c < 0.5f) return {"Standby"};
-      return {(!std::isnan(v) && v > 0.5f) ? "Warmwasser" : "Heizen"};
+      if (std::isnan(c)) return {"${mode_unknown}"};
+      if (c < 0.5f) return {"${mode_standby}"};
+      return {(!std::isnan(v) && v > 0.5f) ? "${mode_hot_water}" : "${mode_heating}"};
 
-  # Flow with its setpoint for the "Vorlauf" tile, e.g. "25,4 °C (Soll: 28,2 °C)".
+  # Flow with its setpoint for the "Flow" tile, e.g. "25.4 °C (set: 28.2 °C)".
   - platform: template
     name: "Flow with setpoint"
     icon: mdi:radiator
@@ -546,10 +554,10 @@ text_sensor:
       if (std::isnan(s))
         snprintf(buf, sizeof(buf), "%.1f °C", t);
       else
-        snprintf(buf, sizeof(buf), "%.1f °C (Soll: %.1f °C)", t, s);
+        snprintf(buf, sizeof(buf), "%.1f °C (${setpoint_label}: %.1f °C)", t, s);
       std::string out(buf);
       for (auto &ch : out)
-        if (ch == '.') ch = ',';
+        if (ch == '.') ch = '${decimal_separator}';
       return out;
 
 binary_sensor:

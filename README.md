@@ -83,8 +83,8 @@ tools/
   ha_dashboard.py            uploads a dashboard view to Home Assistant
   ha_entities.py             lists/removes Home Assistant entities
 homeassistant/
-  wps-dashboard-view.yaml    the "Wärmepumpe" dashboard view
-  keller-heatpump-card.yaml  example: compact status card for another view
+  wps-dashboard-view.yaml    the "Heat pump" dashboard view
+  heatpump-status-card.yaml  example: compact status card for another view
 km273_dictionary.csv         element table of a WPS 8K-1 (1792 parameters) + labels and notes
 data/                        raw element table dump of that pump (reference)
 docs/                        this documentation

@@ -6,7 +6,7 @@ References in this chapter point to the Buderus installation manual *Logatherm W
 
 ## The pump's CAN bus
 
-All boards inside the pump talk over one CAN bus (125 kbit/s). The bus is a chain with a **termination at each end**, set with a small switch labelled **Term** on the boards at the ends (manual, figure 34 "CAN-BUS-Übersicht"):
+All boards inside the pump talk over one CAN bus (125 kbit/s). The bus is a chain with a **termination at each end**, set with a small switch labelled **Term** on the boards at the ends (installation manual, figure 34, CAN bus overview):
 
 ```
   PEL  ───── PSU ───── BAS ───── LCD
@@ -29,7 +29,7 @@ Each CAN connection has **four wires**: +12 V, GND, CAN-H, CAN-L. The boards are
 Connect the adapter to the **CAN-BUS connector on the PEL board**, the same place where Buderus accessories like the HRC 2 room controller are connected. This gives you CAN-H, CAN-L and the 12 V supply for the adapter in one place.
 
 1. Switch the pump off at the breaker and wait a few minutes.
-2. Open the front cover and the electrical box. The PEL board is in the electrical box (manual, figure 33 "Übersicht Leiterplatte", variant a) for WPS K-1).
+2. Open the front cover and the electrical box. The PEL board is in the electrical box (installation manual, figure 33, circuit board overview, variant a) for WPS K-1).
 3. Find the 4-pole CAN connector and the **Term** switch next to it. **Read the markings on your board** for +12 V, GND, CAN-H, CAN-L and write them down. Don't rely on positions in photos from other pumps.
 4. Run your cable through a free cable gland, away from mains cables (≥ 100 mm), and connect it.
 
@@ -51,7 +51,7 @@ Connections:
 
 ## The Term switch (termination)
 
-A CAN bus needs **exactly two** 120 Ω terminations, one at each physical end. The manual says it plainly: *"Der Schalter Term markiert Anfang und Ende der CAN-BUS-Verbindung. Achten Sie darauf, dass die richtigen Karten terminiert sind und alle übrigen nicht terminiert sind."* And for accessories: *"Wird zusätzlich ein Multimodul, eine Passive Kühlstation oder ein Raumregler HRC 2 installiert, muss das letzte Bauteil in der CAN-BUS-Kette terminiert werden."*
+A CAN bus needs **exactly two** 120 Ω terminations, one at each physical end. The manual says it plainly (translated from the German installation manual): *"The Term switch marks the beginning and the end of the CAN bus connection. Make sure that the right boards are terminated and all others are not."* And for accessories: *"If a multi-module, a passive cooling station or an HRC 2 room controller is also installed, the last component in the CAN bus chain must be terminated."*
 
 Our adapter is connected like such an accessory, at the end of the chain behind the PEL board. So:
 

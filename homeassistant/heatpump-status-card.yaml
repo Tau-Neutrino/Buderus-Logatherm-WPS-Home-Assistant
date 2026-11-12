@@ -1,9 +1,10 @@
-# Heat pump block on the Keller page (view path: technikraum), placed above "Waschmaschine".
-# Needs HACS button-card (only the HACS version may be registered as a resource).
+# Small heat pump status block for any dashboard page; tapping it opens the full heat pump view.
+# Needs the HACS cards button-card and card-mod (register only the HACS version of button-card as a resource).
+# The mode texts in `map` must match the firmware substitutions mode_heating / mode_hot_water / mode_standby.
 type: vertical-stack
 cards:
 - type: markdown
-  content: '## 🔥 Wärmepumpe'
+  content: '## 🔥 Heat pump'
   card_mod:
     style: |
       ha-card {
@@ -30,7 +31,7 @@ cards:
   show_icon: false
   tap_action:
     action: navigate
-    navigation_path: /lovelace/waermepumpe
+    navigation_path: /lovelace/heat-pump
   styles:
     card:
     - 'border-radius: 16px'
@@ -45,12 +46,12 @@ cards:
   label: |
     [[[
       const g = (e) => states[e]?.state;
-      const n = (e) => { const v = parseFloat(g(e)); return isNaN(v) ? '—' : v.toFixed(1).replace('.', ','); };
+      const n = (e) => { const v = parseFloat(g(e)); return isNaN(v) ? '—' : v.toFixed(1); };
       const mode = g('sensor.haus_buderus_wps_operating_mode') ?? 'unknown';
-      const map = { 'Heizen': ['🔥 Heizen', 'rgb(255,112,67)'], 'Warmwasser': ['🚿 Warmwasser', 'rgb(229,57,53)'], 'Standby': ['⚫ Standby', 'var(--primary-text-color)'] };
+      const map = { 'Heating': ['🔥 Heating', 'rgb(255,112,67)'], 'Hot water': ['🚿 Hot water', 'rgb(229,57,53)'], 'Standby': ['⚫ Standby', 'var(--primary-text-color)'] };
       const [text, color] = map[mode] ?? [`❓ ${mode}`, 'var(--primary-text-color)'];
       const cop = parseFloat(g('sensor.haus_buderus_wps_estimated_cop'));
-      const copText = isNaN(cop) ? '' : ` <span style="font-size:0.85rem;font-weight:600;color:var(--secondary-text-color);">· COP ≈ ${cop.toFixed(1).replace('.', ',')}</span>`;
+      const copText = isNaN(cop) ? '' : ` <span style="font-size:0.85rem;font-weight:600;color:var(--secondary-text-color);">· COP ≈ ${cop.toFixed(1)}</span>`;
       const box = (t, v) => `
             <div style="flex:1;background:rgba(128,128,128,0.1);border-radius:12px;padding:10px 12px;">
               <div style="font-size:0.7rem;color:var(--secondary-text-color);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">${t}</div>
@@ -62,7 +63,7 @@ cards:
             <div style="font-size:1.25rem;font-weight:800;color:${color};">${text}${copText}</div>
             <ha-icon icon="mdi:chevron-right" style="color:var(--secondary-text-color);--mdc-icon-size:20px;width:20px;height:20px;"></ha-icon>
           </div>
-          <div style="display:flex;gap:10px;">${box('Vorlauf', n('sensor.haus_buderus_wps_heating_flow_gt1') + ' °C')}${box('Warmwasser', n('sensor.haus_buderus_wps_hot_water_display') + ' °C')}${box('Außen', n('sensor.haus_buderus_wps_outdoor_gt2') + ' °C')}
+          <div style="display:flex;gap:10px;">${box('Flow', n('sensor.haus_buderus_wps_heating_flow_gt1') + ' °C')}${box('Hot water', n('sensor.haus_buderus_wps_hot_water_display') + ' °C')}${box('Outdoor', n('sensor.haus_buderus_wps_outdoor_gt2') + ' °C')}
           </div>
         </div>`;
     ]]]
