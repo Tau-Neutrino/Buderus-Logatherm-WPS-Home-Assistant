@@ -24,8 +24,8 @@ Hot water;DHW_CALCULATED_E21_T3_START_TEMP_SEC_PER_TENTH_ADJ;Hot water start ris
 Hot water;DHW_CALCULATED_T3_DHW_LOADING_INTERVAL;Hot water loading interval;;1;0;60
 Hot water;DHW_CALCULATED_T3_START_TEMP_MIN_VALUE;Hot water start min value;;1;0;60
 Hot water;TIMER_DHW_E21_T3_START_TEMP_ADJ;Hot water start rise timer;;1;0;60
-Statistics;STATS_ENERGY_OUTPUT_HEATING;Heat produced heating;kWh;0.01;0;300
-Statistics;STATS_ENERGY_OUTPUT_DHW;Heat produced hot water;kWh;0.01;0;300
+Statistics;STATS_ENERGY_OUTPUT_HEATING;Heat produced heating;kWh;0.01;2;30
+Statistics;STATS_ENERGY_OUTPUT_DHW;Heat produced hot water;kWh;0.01;2;30
 Statistics;STATS_COMPRESSOR_HEATING;Compressor runtime heating;h;0.000277777778;0;300
 Statistics;STATS_COMPRESSOR_DHW;Compressor runtime hot water;h;0.000277777778;0;300
 Statistics;STATS_COMPRESSOR_START_HEATING;Compressor starts heating;;1;0;300

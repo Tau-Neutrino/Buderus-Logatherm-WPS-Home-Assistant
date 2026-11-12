@@ -46,7 +46,7 @@ Connections:
 |---|---|
 | CAN-H (CANH) | SN65HVD230 CANH (twisted pair 1) |
 | CAN-L (CANL) | SN65HVD230 CANL (twisted pair 1) |
-| +12 V | fuse → diode → buck IN+ (pair 2) |
+| +12 V | (optional fuse → diode →) buck IN+ (pair 2) |
 | GND | buck IN− (pair 2), cable shield |
 
 ## The Term switch (termination)

@@ -6,6 +6,9 @@ esphome/secrets.yaml
 # Local Home Assistant dashboard backups (contain your whole dashboard config)
 homeassistant/backups/
 
+# Personal Home Assistant setup (dashboard design, theme, helper scripts) - not part of the heat pump project
+private/
+
 # Python
 __pycache__/
 *.pyc

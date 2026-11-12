@@ -42,8 +42,8 @@ esphome:
           km273::poller.add(390, 1.0f, id(p_dhw_calculated_t3_dhw_loading_interval), 60000);
           km273::poller.add(391, 1.0f, id(p_dhw_calculated_t3_start_temp_min_value), 60000);
           km273::poller.add(2602, 1.0f, id(p_timer_dhw_e21_t3_start_temp_adj), 60000);
-          km273::poller.add(2346, 0.01f, id(p_stats_energy_output_heating), 300000);
-          km273::poller.add(2342, 0.01f, id(p_stats_energy_output_dhw), 300000);
+          km273::poller.add(2346, 0.01f, id(p_stats_energy_output_heating), 30000);
+          km273::poller.add(2342, 0.01f, id(p_stats_energy_output_dhw), 30000);
           km273::poller.add(2261, 0.000277777778f, id(p_stats_compressor_heating), 300000);
           km273::poller.add(2253, 0.000277777778f, id(p_stats_compressor_dhw), 300000);
           km273::poller.add(2294, 1.0f, id(p_stats_compressor_start_heating), 300000);
@@ -327,7 +327,7 @@ sensor:
     id: p_stats_energy_output_heating
     name: "Heat produced heating"
     update_interval: never
-    accuracy_decimals: 0
+    accuracy_decimals: 2
     unit_of_measurement: "kWh"
     device_class: energy
     state_class: total_increasing
@@ -335,7 +335,7 @@ sensor:
     id: p_stats_energy_output_dhw
     name: "Heat produced hot water"
     update_interval: never
-    accuracy_decimals: 0
+    accuracy_decimals: 2
     unit_of_measurement: "kWh"
     device_class: energy
     state_class: total_increasing

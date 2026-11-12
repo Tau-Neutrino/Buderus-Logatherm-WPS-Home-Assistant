@@ -17,10 +17,10 @@ Left to right: the **SN65HVD230** module (screw terminal CANH/CANL at the top), 
 | 1 | ESP32 DevKit (ESP32-WROOM-32) | Matches `board: esp32dev` in the firmware. Other ESP32 boards with TWAI work after adjusting `board` and pins. |
 | 2 | SN65HVD230 CAN transceiver module (often sold as "VP230") | A 3.3 V part. Most modules have a **120 Ω termination resistor** on board, which this setup **uses** (see [step 2](2-pump-connection.md#the-term-switch-termination)). |
 | 3 | Buck converter 12 V → 3.3 V | e.g. LM2596 module set to **3.30 V**. A fixed 3.3 V module (≥ 1 A) is safer because it has no trimmer that can drift. |
-| 4 | F1: fuse + holder | e.g. 0.5 A slow-blow or PTC. It protects the pump's 12 V supply against a short in your adapter. |
-| 5 | D1: 1N5819 Schottky diode | Reverse-polarity protection (≈ 0.3 V drop) |
+| 4 | Optional: F1 fuse + holder | e.g. 0.5 A slow-blow or PTC. Recommended: it protects the pump's 12 V supply against a short in your adapter. |
+| 5 | Optional: D1 1N5819 Schottky diode | Reverse-polarity protection (≈ 0.3 V drop). Can be left out if you are sure about the polarity. |
 | 6 | Cable with **2 twisted pairs**, shielded | Buderus recommends **LIYCY (TP) 2×2×0.5**. Pair 1: CAN-H/CAN-L, pair 2: +12 V/GND. Max. 30 m. |
-| 7 | Optional: TVS diode SMBJ15A, 100 µF/25 V capacitor | Across the 12 V input, after D1 |
+| 7 | Optional: TVS diode SMBJ15A, 100 µF/25 V capacitor | Across the 12 V input (after D1 if fitted) |
 | 8 | Perfboard, screw terminals, enclosure, cable gland | Mount the adapter **outside** the pump (Wi-Fi does not get through the metal housing) |
 
 Cost: about €10–15 without cable and enclosure.
@@ -61,7 +61,7 @@ The pins match all firmware files (`rx_pin: GPIO21`, `tx_pin: GPIO22`). GPIO21/2
 
 - **Never power by USB and buck at the same time.** The DevKit's regulator would drive against the buck converter. Flash over USB with the buck disconnected, or update over the air (OTA).
 - If you need USB on site, disconnect the 3.3 V wire first and use a laptop running on battery, to avoid ground loops through the pump.
-- The ESP32 draws Wi-Fi peaks of up to ≈ 0.5 A at 3.3 V, which is well under 0.2 A at 12 V. The pump's 12 V rail also supplies accessories like the HRC 2 room controller, so a small adapter like this is within what that connector is meant for. Still, keep the fuse.
+- The ESP32 draws Wi-Fi peaks of up to ≈ 0.5 A at 3.3 V, which is well under 0.2 A at 12 V. The pump's 12 V rail also supplies accessories like the HRC 2 room controller, so a small adapter like this is within what that connector is meant for. The fuse and the diode are optional, but the fuse is cheap insurance for the pump's 12 V rail.
 - Feeding the 3V3 pin bypasses the DevKit's own regulator. The ESP32 tolerates 3.0–3.6 V and the SN65HVD230 has an absolute maximum of about 4 V, so there is no further protection.
 
 ## Cable

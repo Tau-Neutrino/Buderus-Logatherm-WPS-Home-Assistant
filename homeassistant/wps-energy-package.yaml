@@ -1,0 +1,214 @@
+# Buderus WPS – electricity (Shelly Pro 3EM) and measured COP.
+#
+# Install as a Home Assistant package:
+#   1. configuration.yaml:   homeassistant:
+#                              packages: !include_dir_named packages
+#   2. copy this file to     /config/packages/wps_energy.yaml
+#   3. Developer tools → YAML → check configuration, then restart Home Assistant
+#      (utility_meter needs a restart, a reload is not enough).
+#
+# Entity IDs: the pump entities here carry the area prefix "haus_" (sensor.haus_buderus_wps_…),
+# the meter is sensor.haus_wps_8k1_3em_pro_energy. Adjust both to your installation.
+#
+# What you get:
+#   sensor.wps_electricity_heating / _hot_water / _standby   lifetime kWh, split by what the pump is doing
+#   sensor.wps_*_today                                       daily counters (reset at midnight)
+#   sensor.wps_cop_heating_today / _hot_water_today / _today measured COP today (overall includes standby)
+#   sensor.wps_cop_last_run                                  COP of the last compressor run (+ attributes)
+#
+# Heat comes from the pump's own counters (STATS_ENERGY_OUTPUT_*, polled every 30 s), electricity
+# from the Shelly. COP = heat ÷ electricity over the same period.
+#
+# Database: the recorder block below keeps helper and diagnostic entities out of the database. It is
+# merged with the `recorder:` section in configuration.yaml (that one must not have its own `exclude:`;
+# if it does, move these entries there). Changes need a restart.
+# Of the Shelly Pro 3EM only `_power` and `_energy` are used; disable the per-phase and apparent-power
+# entities in Settings → Entities, then they are neither processed nor stored.
+
+recorder:
+  exclude:
+    entities:
+      # Helper counters for the "today" COP sensors; their state survives a restart without the recorder.
+      - sensor.wps_electricity_heating_today
+      - sensor.wps_electricity_hot_water_today
+      - sensor.wps_heat_heating_today
+      - sensor.wps_heat_hot_water_today
+      # ESP32 diagnostics (~2800 and ~1350 changes per day).
+      - sensor.buderus_wps_can_frame_rate
+      - sensor.haus_buderus_wps_hot_water_start_rise_timer
+
+utility_meter:
+  # One counter, three tariffs: the automation below switches the tariff, so the Shelly's own kWh
+  # counter is split without any integration error.
+  wps_electricity:
+    name: WPS electricity
+    unique_id: wps_electricity
+    source: sensor.haus_wps_8k1_3em_pro_energy
+    tariffs:
+      - heating
+      - hot_water
+      - standby
+
+  # Daily counters for the "today" COP sensors.
+  wps_electricity_heating_today:
+    name: WPS electricity heating today
+    unique_id: wps_electricity_heating_today
+    source: sensor.wps_electricity_heating
+    cycle: daily
+  wps_electricity_hot_water_today:
+    name: WPS electricity hot water today
+    unique_id: wps_electricity_hot_water_today
+    source: sensor.wps_electricity_hot_water
+    cycle: daily
+  wps_electricity_today:
+    name: WPS electricity today
+    unique_id: wps_electricity_today
+    source: sensor.haus_wps_8k1_3em_pro_energy
+    cycle: daily
+  wps_heat_heating_today:
+    name: WPS heat heating today
+    unique_id: wps_heat_heating_today
+    source: sensor.haus_buderus_wps_heat_produced_heating
+    cycle: daily
+  wps_heat_hot_water_today:
+    name: WPS heat hot water today
+    unique_id: wps_heat_hot_water_today
+    source: sensor.haus_buderus_wps_heat_produced_hot_water
+    cycle: daily
+
+automation:
+  - id: wps_electricity_tariff
+    alias: "WPS: electricity tariff (heating / hot water / standby)"
+    description: Splits the Shelly energy by compressor state and diverter valve.
+    mode: queued
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.haus_buderus_wps_compressor_running
+          - sensor.haus_buderus_wps_diverter_valve
+      - trigger: homeassistant
+        event: start
+      - trigger: time_pattern
+        minutes: "/5"
+    conditions:
+      # Keep the current tariff while the pump entities are unavailable (ESP reboot, OTA).
+      - condition: template
+        value_template: >
+          {{ states('binary_sensor.haus_buderus_wps_compressor_running') in ['on', 'off']
+             and states('sensor.haus_buderus_wps_diverter_valve') | is_number }}
+    actions:
+      - variables:
+          tariff: >
+            {% if is_state('binary_sensor.haus_buderus_wps_compressor_running', 'off') %}standby
+            {% elif states('sensor.haus_buderus_wps_diverter_valve') | float(0) > 0.5 %}hot_water
+            {% else %}heating{% endif %}
+      - if:
+          - condition: template
+            value_template: "{{ states('select.wps_electricity') != tariff }}"
+        then:
+          - action: select.select_option
+            target:
+              entity_id: select.wps_electricity
+            data:
+              option: "{{ tariff }}"
+
+template:
+  - sensor:
+      - name: WPS COP heating today
+        unique_id: wps_cop_heating_today
+        icon: mdi:gauge
+        state_class: measurement
+        # Below 0.2 kWh electricity the ratio is mostly rounding noise.
+        availability: "{{ states('sensor.wps_electricity_heating_today') | float(0) >= 0.2 }}"
+        state: >
+          {{ (states('sensor.wps_heat_heating_today') | float(0)
+              / states('sensor.wps_electricity_heating_today') | float(1)) | round(2) }}
+      - name: WPS COP hot water today
+        unique_id: wps_cop_hot_water_today
+        icon: mdi:gauge
+        state_class: measurement
+        availability: "{{ states('sensor.wps_electricity_hot_water_today') | float(0) >= 0.2 }}"
+        state: >
+          {{ (states('sensor.wps_heat_hot_water_today') | float(0)
+              / states('sensor.wps_electricity_hot_water_today') | float(1)) | round(2) }}
+      # Overall: all heat ÷ all electricity, standby included (what you actually pay for).
+      - name: WPS COP today
+        unique_id: wps_cop_today
+        icon: mdi:gauge
+        state_class: measurement
+        availability: "{{ states('sensor.wps_electricity_today') | float(0) >= 0.2 }}"
+        state: >
+          {{ ((states('sensor.wps_heat_heating_today') | float(0)
+               + states('sensor.wps_heat_hot_water_today') | float(0))
+              / states('sensor.wps_electricity_today') | float(1)) | round(2) }}
+
+  # COP of one compressor run: counters are snapshotted at start and compared 60 s after stop
+  # (the heat counter is polled every 30 s; its last step after a stop arrived within 0–19 s in the
+  # history, never later). The electricity includes the pumps' run-on in those 60 s. If the compressor
+  # restarts within the 60 s, the two runs are counted as one.
+  # `this` (the sensor's previous state) only exists in the entity templates, not in `actions`,
+  # so each template repeats the validity check `v`.
+  - triggers:
+      - trigger: state
+        entity_id: binary_sensor.haus_buderus_wps_compressor_running
+        from: "off"
+        to: "on"
+        id: start
+      - trigger: state
+        entity_id: binary_sensor.haus_buderus_wps_compressor_running
+        from: "on"
+        to: "off"
+        for: "00:01:00"
+        id: stop
+    actions:
+      - variables:
+          qh: "{{ states('sensor.haus_buderus_wps_heat_produced_heating') | float(-1) }}"
+          qw: "{{ states('sensor.haus_buderus_wps_heat_produced_hot_water') | float(-1) }}"
+          e: "{{ states('sensor.haus_wps_8k1_3em_pro_energy') | float(-1) }}"
+          now_ok: "{{ qh >= 0 and qw >= 0 and e >= 0 }}"
+    sensor:
+      - name: WPS COP last run
+        unique_id: wps_cop_last_run
+        icon: mdi:gauge
+        state_class: measurement
+        state: >
+          {% set a = this.attributes %}
+          {% set v = trigger.id == 'stop' and now_ok and a.e0 is number and a.q0 is number
+                     and e - a.e0 >= 0.05 and qh + qw - a.q0 > 0 %}
+          {% if v %}{{ ((qh + qw - a.q0) / (e - a.e0)) | round(2) }}
+          {% elif this.state | is_number %}{{ this.state }}
+          {% else %}{{ none }}{% endif %}
+        attributes:
+          # Snapshot at start, kept until the next start.
+          q0: "{{ (qh + qw) | round(2) if trigger.id == 'start' and now_ok else (this.attributes.q0 if trigger.id == 'stop' else none) }}"
+          qh0: "{{ qh if trigger.id == 'start' and now_ok else (this.attributes.qh0 if trigger.id == 'stop' else none) }}"
+          e0: "{{ e if trigger.id == 'start' and now_ok else (this.attributes.e0 if trigger.id == 'stop' else none) }}"
+          started: "{{ now().isoformat() if trigger.id == 'start' else this.attributes.started }}"
+          # Result of the last finished run.
+          ended: >
+            {% set a = this.attributes %}
+            {% set v = trigger.id == 'stop' and now_ok and a.e0 is number and a.q0 is number
+                       and e - a.e0 >= 0.05 and qh + qw - a.q0 > 0 %}
+            {{ (now() - timedelta(seconds=60)).isoformat() if v else a.ended }}
+          minutes: >
+            {% set a = this.attributes %}
+            {% set v = trigger.id == 'stop' and now_ok and a.e0 is number and a.q0 is number
+                       and e - a.e0 >= 0.05 and qh + qw - a.q0 > 0 %}
+            {{ ((as_timestamp(now()) - as_timestamp(a.started, 0)) / 60 - 1) | round(1) if v and a.started else a.minutes }}
+          mode: >
+            {% set a = this.attributes %}
+            {% set v = trigger.id == 'stop' and now_ok and a.e0 is number and a.q0 is number
+                       and e - a.e0 >= 0.05 and qh + qw - a.q0 > 0 %}
+            {% if v %}{% set dq = qh + qw - a.q0 %}{% set dqh = qh - a.qh0 %}
+            {{ 'heating' if dqh > 0.8 * dq else ('hot_water' if dqh < 0.2 * dq else 'mixed') }}
+            {% else %}{{ a.mode }}{% endif %}
+          heat_kwh: >
+            {% set a = this.attributes %}
+            {% set v = trigger.id == 'stop' and now_ok and a.e0 is number and a.q0 is number
+                       and e - a.e0 >= 0.05 and qh + qw - a.q0 > 0 %}
+            {{ (qh + qw - a.q0) | round(2) if v else a.heat_kwh }}
+          electricity_kwh: >
+            {% set a = this.attributes %}
+            {% set v = trigger.id == 'stop' and now_ok and a.e0 is number and a.q0 is number
+                       and e - a.e0 >= 0.05 and qh + qw - a.q0 > 0 %}
+            {{ (e - a.e0) | round(3) if v else a.electricity_kwh }}

@@ -56,7 +56,7 @@ sections:
         raw_plotly_config: true
         grid_options:
           columns: full
-          rows: 5
+          rows: 4
         config:
           displayModeBar: false
           staticPlot: true
@@ -69,6 +69,9 @@ sections:
             vars.start = Math.round((v('hot_water_start', 40) + off) * 10) / 10;
             vars.stop = Math.round((v('hot_water_stop', 46) + off) * 10) / 10;
             vars.target = v('hot_water_setpoint', 50);
+            // Zielbereich: zwischen Soll und Stopp (dunkelgrün, gestrichelter Rand).
+            vars.zlo = Math.min(vars.target, vars.stop);
+            vars.zhi = Math.max(vars.target, vars.stop);
           }
         entities:
           - type: indicator
@@ -78,7 +81,7 @@ sections:
               suffix: " °C"
               valueformat: ".1f"
               font:
-                size: 44
+                size: 36
             title:
               text: $fn ({ vars }) => `Warmwasser<br><span style="font-size:14px">Start ${vars.start.toFixed(1)} °C · Stopp ${vars.stop.toFixed(1)} °C · Soll ${vars.target.toFixed(0)} °C</span>`
               font:
@@ -88,28 +91,54 @@ sections:
               axis:
                 range: [40, 60]
                 dtick: 5
+              # Kein Balken, der Wert wird von der Nadel angezeigt.
               bar:
-                color: "#ff7043"
-                thickness: 0.3
+                color: "rgba(0,0,0,0)"
+                thickness: 0
               steps: |-
                 $fn ({ vars }) => [
                   { range: [40, Math.max(40, vars.start)], color: '#bbdefb' },
-                  { range: [Math.max(40, vars.start), Math.min(60, vars.stop)], color: '#c8e6c9' },
-                  { range: [Math.min(60, vars.stop), 60], color: '#ffe0b2' }
+                  { range: [Math.max(40, vars.start), Math.max(40, vars.zlo)], color: '#c8e6c9' },
+                  { range: [Math.max(40, vars.zlo), Math.min(60, vars.zhi)], color: '#66bb6a' },
+                  { range: [Math.min(60, vars.zhi), 60], color: '#ffe0b2' }
                 ]
-              threshold:
-                value: $fn ({ vars }) => vars.target
-                thickness: 0.9
-                line:
-                  color: "#d32f2f"
-                  width: 4
+        # Nadel = Pfad-Shape in Pixeln um den Mittelpunkt des Bogens. Plotly: Radius = min(Breite/2, Höhe der
+        # Zeichenfläche), Mittelpunkt = unterer Rand der Zeichenfläche. Höhe 215 − 70 − 10 = 135 px und
+        # Rand links/rechts 25 px: ab 320 px Kartenbreite ist der Radius immer 135 px (Breite/2 ≥ Höhe).
+        # Die Nadel beginnt bei 0,66 r, damit sie die Zahl in der Mitte nicht überdeckt.
         layout:
-          height: 280
+          height: 215
           margin:
             t: 70
             b: 10
-            l: 30
-            r: 30
+            l: 25
+            r: 25
+          shapes: |-
+            $fn ({ vars }) => {
+              const r = 135;
+              const v = Math.min(60, Math.max(40, vars.hw));
+              const a = Math.PI * (1 - (v - 40) / 20);
+              const c = Math.cos(a), s = Math.sin(a);
+              const r0 = 0.66 * r, r1 = 1.03 * r, w = 5;
+              const pt = (d, o) => `${(d * c - o * s).toFixed(1)},${(d * s + o * c).toFixed(1)}`;
+              // Gestrichelter Rand um den Zielbereich: Ringsegment 0,75 r … r als Polygon (Plotly-Pfade kennen keine Bögen).
+              const ang = (x) => Math.PI * (1 - (Math.min(60, Math.max(40, x)) - 40) / 20);
+              const a0 = ang(vars.zhi), a1 = ang(vars.zlo), n = 24, arc = [];
+              for (let i = 0; i <= n; i++) { const t = a0 + (a1 - a0) * i / n; arc.push(`${(r * Math.cos(t)).toFixed(1)},${(r * Math.sin(t)).toFixed(1)}`); }
+              for (let i = n; i >= 0; i--) { const t = a0 + (a1 - a0) * i / n; arc.push(`${(0.75 * r * Math.cos(t)).toFixed(1)},${(0.75 * r * Math.sin(t)).toFixed(1)}`); }
+              const base = { type: 'path', layer: 'above', xref: 'paper', yref: 'paper', xsizemode: 'pixel', ysizemode: 'pixel', xanchor: 0.5, yanchor: 0 };
+              return [{
+                ...base,
+                path: `M ${arc.join(' L ')} Z`,
+                fillcolor: 'rgba(0,0,0,0)',
+                line: { color: '#1b5e20', width: 1.5, dash: 'dot' },
+              }, {
+                ...base,
+                path: `M ${pt(r0, w)} L ${pt(r1, 0)} L ${pt(r0, -w)} Z`,
+                fillcolor: '#37474f',
+                line: { color: '#263238', width: 1 },
+              }];
+            }
 
   # ---------------------------------------------------------------- Energie
   - type: grid
@@ -170,11 +199,11 @@ sections:
             b: 10
             l: 10
             r: 10
-      # Erzeugte Wärme heute: Verlauf seit Mitternacht (hours_to_show: current_day),
+      # Erzeugte Wärme der letzten 24 h (gleitendes Fenster, hours_to_show: 24),
       # je Zähler letzter minus erster Wert; die Zähler-Entitäten selbst werden nicht gezeichnet.
       - type: custom:plotly-graph
         raw_plotly_config: true
-        hours_to_show: current_day
+        hours_to_show: 24
         refresh_interval: 60
         grid_options:
           columns: full
@@ -216,7 +245,7 @@ sections:
               color: "#000000"
               size: 14
             title:
-              text: $fn ({ vars }) => `Erzeugte Wärme heute<br><b>${vars.total} kWh</b>`
+              text: $fn ({ vars }) => `Erzeugte Wärme 24 h<br><b>${vars.total} kWh</b>`
               position: middle center
               font:
                 size: 16
@@ -235,9 +264,9 @@ sections:
             l: 10
             r: 10
       # Wärme pro Tag: letzter Zählerstand jedes Tages (statistic: state, period: day),
-      # Balken = Differenz zum letzten Stand des Vortags (Filter delta).
+      # Balken = Differenz zum letzten Stand des Vortags (Filter delta). Strom = Lebenszeitzähler des Shelly.
       - type: custom:plotly-graph
-        title: Erzeugte Wärme pro Tag
+        title: Erzeugte Wärme & Strom pro Tag
         hours_to_show: 8d
         # Achse bis Tagesende (nicht nur bis "jetzt"), sonst sind die Balken von heute abgeschnitten.
         visible_range: |
@@ -258,8 +287,8 @@ sections:
               - delta
             type: bar
             # Feste Breite/Versatz in ms (x = Tagesbeginn): sonst zeichnet Plotly einen einzelnen Balken als Haarlinie.
-            width: 34560000
-            offset: 8640000
+            width: 24192000
+            offset: 6912000
             texttemplate: "%{y:.0f}"
             textposition: outside
             marker:
@@ -274,12 +303,28 @@ sections:
             filters:
               - delta
             type: bar
-            width: 34560000
-            offset: 43200000
+            width: 24192000
+            offset: 31104000
             texttemplate: "%{y:.0f}"
             textposition: outside
             marker:
               color: "#ffcdd2"
+              line:
+                color: "#444444"
+                width: 1
+          - entity: sensor.haus_wps_8k1_3em_pro_energy
+            name: Strom
+            statistic: state
+            period: day
+            filters:
+              - delta
+            type: bar
+            width: 24192000
+            offset: 55296000
+            texttemplate: "%{y:.1f}"
+            textposition: outside
+            marker:
+              color: "#90caf9"
               line:
                 color: "#444444"
                 width: 1
@@ -308,27 +353,15 @@ sections:
             rangemode: tozero
             fixedrange: true
             gridcolor: "rgba(128,128,128,0.25)"
-      - type: tile
-        entity: sensor.haus_buderus_wps_compressor_runtime_heating
-        name: Laufzeit Heizen
-        icon: mdi:timer-outline
-        color: deep-orange
-      - type: tile
-        entity: sensor.haus_buderus_wps_compressor_runtime_hot_water
-        name: Laufzeit Warmwasser
-        icon: mdi:timer-outline
-        color: blue
-      - type: tile
-        entity: sensor.haus_buderus_wps_compressor_starts_heating
-        name: Starts Heizen
-        icon: mdi:counter
-        color: deep-orange
-      - type: tile
-        entity: sensor.haus_buderus_wps_compressor_starts_hot_water
-        name: Starts Warmwasser
-        icon: mdi:counter
-        color: blue
-      # Geschätzte COP aus dem Datenblatt (Sole ein GT10, Vorlauf WP GT8), nur bei laufendem Kompressor.
+
+  # ---------------------------------------------------------------- Arbeitszahl geschätzt
+  # Geschätzte COP aus den Datenblattkurven (Sole ein GT10, Vorlauf WP GT8), nur bei laufendem Kompressor,
+  # erst 1 min nach Kompressorstart bzw. Wechsel Heizen/Warmwasser.
+  - type: grid
+    cards:
+      - type: heading
+        heading: Arbeitszahl geschätzt (Datenblattkurven)
+        icon: mdi:chart-bell-curve
       - type: tile
         entity: sensor.haus_buderus_wps_estimated_cop
         name: COP aktuell (geschätzt)
@@ -395,10 +428,171 @@ sections:
             rangemode: tozero
             fixedrange: true
             gridcolor: "rgba(128,128,128,0.25)"
-      - type: markdown
-        content: >-
-          ℹ️ **COP geschätzt** aus dem Datenblatt (Sole-Eintritt GT10, Vorlauf GT8), erst 1 min nach
-          Kompressorstart bzw. Wechsel Heizen/Warmwasser. ⚡ **Gemessene Arbeitszahl** folgt mit dem Shelly-3-Phasen-Zähler.
+
+  # ---------------------------------------------------------------- Arbeitszahl real
+  # Gemessen: Strom vom Shelly Pro 3EM, aufgeteilt nach Heizen / Warmwasser / Standby (Kompressor +
+  # Umschaltventil); Wärme aus den Zählern der WP (homeassistant/wps-energy-package.yaml).
+  # "COP letzter Lauf" = Wärme ÷ Strom vom Kompressorstart bis 60 s nach dem Stopp; "Heute" enthält Standby.
+  - type: grid
+    cards:
+      - type: heading
+        heading: Arbeitszahl real (gemessen)
+        icon: mdi:flash
+      - type: tile
+        entity: sensor.haus_wps_8k1_3em_pro_power
+        name: Leistung aktuell
+        icon: mdi:flash
+        color: amber
+      - type: tile
+        entity: sensor.wps_electricity_today
+        name: Strom heute
+        icon: mdi:lightning-bolt
+        color: amber
+      - type: tile
+        entity: sensor.wps_cop_last_run
+        name: COP letzter Lauf
+        icon: mdi:gauge
+        color: green
+      - type: tile
+        entity: sensor.wps_cop_today
+        name: COP (Heute)
+        icon: mdi:gauge
+        color: green
+      - type: tile
+        entity: sensor.wps_cop_heating_today
+        name: COP (Heizen)
+        icon: mdi:gauge
+        color: deep-orange
+      - type: tile
+        entity: sensor.wps_cop_hot_water_today
+        name: COP (Wasser)
+        icon: mdi:gauge
+        color: blue
+      # Arbeitszahl pro Tag: letzter Zählerstand je Tag (statistic: state, period: day), Differenz zum Vortag,
+      # Wärme ÷ Strom. Ohne Vortageswert kein Balken (Einbautag: Strom nur ab Einbau, Wärme ganzer Tag).
+      # raw_plotly_config: sonst erzwingt die Karte eine Datumsachse über hours_to_show und die
+      # Kategorie-Balken ("11.11.") liegen außerhalb des sichtbaren Bereichs.
+      - type: custom:plotly-graph
+        title: Arbeitszahl pro Tag (gemessen)
+        raw_plotly_config: true
+        hours_to_show: 8d
+        refresh_interval: auto
+        grid_options:
+          columns: full
+          rows: 6
+        config:
+          displayModeBar: false
+          staticPlot: true
+        fn: |
+          $fn ({ vars }) => {
+            const key = (d) => { const t = new Date(d); return t.getFullYear() + '-' + (t.getMonth() + 1) + '-' + t.getDate(); };
+            vars.key = key;
+            vars.daily = (xs, ys) => {
+              const m = {};
+              xs.forEach((x, i) => { const n = Number(ys[i]); if (!isNaN(n)) m[key(x)] = n; });
+              const out = {};
+              Object.keys(m).forEach((k) => {
+                const [y, mo, d] = k.split('-').map(Number);
+                const p = m[key(new Date(y, mo - 1, d - 1))];
+                if (p !== undefined) out[k] = m[k] - p;
+              });
+              return out;
+            };
+          }
+        entities:
+          - entity: sensor.haus_buderus_wps_heat_produced_heating
+            statistic: state
+            period: day
+            internal: true
+            fn: $fn ({ xs, ys, vars }) => { vars.qh = vars.daily(xs, ys); }
+          - entity: sensor.haus_buderus_wps_heat_produced_hot_water
+            statistic: state
+            period: day
+            internal: true
+            fn: $fn ({ xs, ys, vars }) => { vars.qw = vars.daily(xs, ys); }
+          - entity: sensor.wps_electricity_heating
+            statistic: state
+            period: day
+            internal: true
+            fn: $fn ({ xs, ys, vars }) => { vars.eh = vars.daily(xs, ys); }
+          - entity: sensor.wps_electricity_hot_water
+            statistic: state
+            period: day
+            internal: true
+            fn: $fn ({ xs, ys, vars }) => { vars.ew = vars.daily(xs, ys); }
+          # Gesamtstrom: Lebenszeit-Zähler des Shelly.
+          - entity: sensor.haus_wps_8k1_3em_pro_energy
+            statistic: state
+            period: day
+            internal: true
+            fn: |
+              $fn ({ xs, ys, vars }) => {
+                vars.et = vars.daily(xs, ys);
+                const days = [];
+                for (let i = 6; i >= 0; i--) { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i); days.push(d); }
+                const r = (q, e) => (q !== undefined && e !== undefined && e >= 0.2) ? Math.round(q / e * 100) / 100 : null;
+                vars.x = days.map((d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }));
+                vars.h = days.map((d) => r(vars.qh[vars.key(d)], vars.eh[vars.key(d)]));
+                vars.w = days.map((d) => r(vars.qw[vars.key(d)], vars.ew[vars.key(d)]));
+                vars.t = days.map((d) => { const k = vars.key(d); const q = (vars.qh[k] ?? NaN) + (vars.qw[k] ?? NaN); return isNaN(q) ? null : r(q, vars.et[k]); });
+              }
+          - x: $fn ({ vars }) => vars.x
+            y: $fn ({ vars }) => vars.h
+            name: Heizen
+            type: bar
+            texttemplate: "%{y:.2f}"
+            textposition: outside
+            marker:
+              color: "#ffe0b2"
+              line:
+                color: "#444444"
+                width: 1
+          - x: $fn ({ vars }) => vars.x
+            y: $fn ({ vars }) => vars.w
+            name: Warmwasser
+            type: bar
+            texttemplate: "%{y:.2f}"
+            textposition: outside
+            marker:
+              color: "#ffcdd2"
+              line:
+                color: "#444444"
+                width: 1
+          - x: $fn ({ vars }) => vars.x
+            y: $fn ({ vars }) => vars.t
+            name: Gesamt inkl. Standby
+            type: bar
+            texttemplate: "%{y:.2f}"
+            textposition: outside
+            marker:
+              color: "#c8e6c9"
+              line:
+                color: "#444444"
+                width: 1
+        layout:
+          height: 320
+          separators: ",."
+          barmode: group
+          showlegend: true
+          legend:
+            orientation: h
+            x: 0
+            y: 1.08
+          margin:
+            t: 40
+            b: 40
+            l: 50
+            r: 10
+          xaxis:
+            type: category
+            fixedrange: true
+          yaxis:
+            title:
+              text: COP
+            # Feste Skala: höchster Balken + 20 % Platz für die Beschriftung über dem Balken.
+            range: $fn ({ vars }) => [0, Math.max(1, ...[...vars.h, ...vars.w, ...vars.t].filter((v) => v !== null)) * 1.2]
+            fixedrange: true
+            gridcolor: "rgba(128,128,128,0.25)"
 
   # ---------------------------------------------------------------- Heizkurve
   - type: grid
@@ -601,6 +795,29 @@ sections:
             name: Sole ein
           - entity: sensor.haus_buderus_wps_brine_out_gt11
             name: Sole aus
+      - type: heading
+        heading: Betriebsdaten
+        icon: mdi:cog-outline
+      - type: tile
+        entity: sensor.haus_buderus_wps_compressor_runtime_heating
+        name: Laufzeit Heizen
+        icon: mdi:timer-outline
+        color: deep-orange
+      - type: tile
+        entity: sensor.haus_buderus_wps_compressor_runtime_hot_water
+        name: Laufzeit Warmwasser
+        icon: mdi:timer-outline
+        color: blue
+      - type: tile
+        entity: sensor.haus_buderus_wps_compressor_starts_heating
+        name: Starts Heizen
+        icon: mdi:counter
+        color: deep-orange
+      - type: tile
+        entity: sensor.haus_buderus_wps_compressor_starts_hot_water
+        name: Starts Warmwasser
+        icon: mdi:counter
+        color: blue
       - type: history-graph
         hours_to_show: 24
         grid_options:

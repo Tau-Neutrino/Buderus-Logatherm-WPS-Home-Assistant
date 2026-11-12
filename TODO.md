@@ -1,7 +1,8 @@
 # TODO
 
-- [ ] **Power consumption:** install a Shelly 3-phase meter (e.g. Shelly Pro 3EM) in the heat pump's supply and add it to Home Assistant.
-  - Then: electrical power/energy on the WPS page, and COP = heat produced (`STATS_ENERGY_OUTPUT*`) / electrical energy, per day/month, split into heating and hot water.
+- [x] **Power consumption:** Shelly Pro 3EM installed (2026-11-10), package `homeassistant/wps-energy-package.yaml` (tariff split, COP today / per run), cards on the WPS page.
+- [ ] Verify the measured COP after a few days of runs: compare with the estimated COP and check the run-COP mode detection.
+- [ ] Check with the Shelly per-phase sensors whether the electric heater shows up; afterwards disable them again to keep the database small.
 - [x] `HW_COMPRESSOR` confirmed (2026-11-09, heating run: HW_COMPRESSOR, COMPRESSOR_STATE, COMPRESSOR_START all 0→1). `HW_VXV` = 0 while heating confirmed.
 - [x] `HW_VXV` = 1 during hot water confirmed (2026-11-09 21:01, DHW_REQUEST 1, HEATING_REQUEST 0).
 - [x] Pumps (2026-11-09): G1 = heating circuit (on in both states), G2 = heat carrier, variable speed (37 % idle → 71 % running), G3 = brine pump (only with compressor).

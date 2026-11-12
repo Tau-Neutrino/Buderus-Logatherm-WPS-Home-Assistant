@@ -47,6 +47,8 @@
   <polygon points="440,186 440,214 466,200" fill="#d62728"/>
   <line x1="467" y1="186" x2="467" y2="214" stroke="#d62728" stroke-width="4"/>
   <text x="453" y="180" class="p" text-anchor="middle">D1 1N5819</text>
+  <text x="405" y="160" class="s" text-anchor="middle" font-style="italic">optional (recommended)</text>
+  <rect x="298" y="164" width="214" height="74" rx="6" fill="none" stroke="#999" stroke-width="1" stroke-dasharray="5 4"/>
   <text x="453" y="228" class="s" text-anchor="middle">reverse polarity</text>
   <path class="w v12" d="M467 200 H560"/>
   <text x="300" y="262" class="s">pair 2 of the cable: 12 V / GND</text>
@@ -185,7 +187,7 @@
     <text x="436" y="876">1 · ESP32 DevKit (ESP32-WROOM-32, “esp32dev”) – unchanged</text>
     <text x="436" y="900">2 · SN65HVD230 CAN transceiver module, 3.3 V (≈ €2–5)</text>
     <text x="436" y="924">3 · LM2596 buck, set to 3.30 V (or fixed 3.3 V module, ≥ 1 A)</text>
-    <text x="436" y="948">4 · F1 fuse + D1 1N5819 – unchanged</text>
+    <text x="436" y="948">4 · optional: F1 fuse + D1 1N5819 (recommended)</text>
     <text x="436" y="972">5 · Wires: buck → ESP32 3V3/GND + SN65 3V3/GND, TX, RX</text>
     <text x="436" y="996" fill="#888">✗ not needed: MCP2515, level shifter, 5 V rail</text>
     <text x="920" y="876">6 · Cable 2×2×0.6/0.8 twisted pair,</text>

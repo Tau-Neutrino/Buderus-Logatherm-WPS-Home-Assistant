@@ -45,16 +45,18 @@ The entity ID is derived from the `label` in `tools/monitor_params.csv`:
 | Section | Content |
 |---|---|
 | **Aktueller Status** | Tiles: compressor, operating mode, flow with setpoint, outdoor temperature. Hot water **gauge** with start/stop range and setpoint. |
-| **Energie** | Donut of the produced heat (heating vs. hot water, lifetime), a second donut for **today**, bars **per day**, estimated COP per day |
+| **Energie** | Donut of the produced heat (heating vs. hot water, lifetime), a second donut for the **last 24 h**, heat and electricity **per day** |
+| **Arbeitszahl geschätzt (Datenblattkurven)** | COP estimated from the datasheet curves (brine in GT10, flow GT8): current value and mean per day |
+| **Arbeitszahl real (gemessen)** | Needs an electricity meter and the package below: power, electricity today, COP of the last run / today / per mode, measured COP per day |
 | **Heizkurve** | The heating curve as configured in the pump, with today's operating point |
-| **Letzte 24 Stunden** | History graphs of temperatures and states |
+| **Letzte 24 Stunden** | History graph of the temperatures; **Betriebsdaten**: compressor runtime and starts, operating mode over 24 h |
 
 Screenshots of the reference installation (phone, dark theme):
 
-| Status, hot water, energy | Counters and COP | Heating curve, last 24 h |
-|---|---|---|
-| <img src="Pictures/HA_example_1.png" alt="Status, hot water gauge, energy donuts, heat per day" width="260"> | <img src="Pictures/HA_example_2.png" alt="Runtimes, starts, COP per day" width="260"> | <img src="Pictures/HA_example_3.png" alt="Heating curve with switching band, 24 h history" width="260"> |
-| Compressor, mode, flow with setpoint, brine. Hot water gauge with start/stop range. Heat produced: lifetime, today, per day. | Runtimes and starts for heating and hot water. Estimated COP per day. | The heating curve with today's operating point and the current start/stop band. Temperatures and operating mode over 24 h. |
+| Status, hot water, energy | Heat 24 h and per day | Estimated and measured COP | Heating curve, Betriebsdaten |
+|---|---|---|---|
+| <img src="Pictures/HA_example_1.png" alt="Status, hot water gauge, lifetime heat donut" width="200"> | <img src="Pictures/HA_example_2.png" alt="Heat produced in the last 24 h, heat and electricity per day" width="200"> | <img src="Pictures/HA_example_3.png" alt="Estimated COP per day, measured power, electricity and COP" width="200"> | <img src="Pictures/HA_example_4.png" alt="Heating curve with switching band, compressor runtimes and starts" width="200"> |
+| Compressor, mode, flow with setpoint, brine. Hot water gauge with start/stop range. Heat produced over the pump's lifetime. | Heat produced in the last 24 h; heat and electricity per day. | COP estimated from the datasheet curves; measured power, electricity and COP (last run, today, per mode, per day). | The heating curve with today's operating point and the current start/stop band. Compressor runtimes and starts. (The 24 h history graphs are not shown.) |
 
 ### Requirements
 
@@ -140,7 +142,23 @@ template:
 
 ### Energy dashboard
 
-Add `sensor.buderus_wps_heat_produced_heating` and `…_hot_water` under **Settings → Dashboards → Energy** as individual devices to see the heat produced per day/week/month. Together with an electricity meter in the pump's supply (e.g. a Shelly Pro 3EM) you get the real COP = heat ÷ electricity.
+Add `sensor.buderus_wps_heat_produced_heating` and `…_hot_water` under **Settings → Dashboards → Energy** as individual devices to see the heat produced per day/week/month.
+
+### Electricity and measured COP (Shelly Pro 3EM)
+
+With an electricity meter in the pump's supply you get the real COP = heat ÷ electricity. [`homeassistant/wps-energy-package.yaml`](../homeassistant/wps-energy-package.yaml) is a ready-made [package](https://www.home-assistant.io/docs/configuration/packages/) for a Shelly Pro 3EM. Copy it to `/config/packages/`, adjust the entity IDs and restart Home Assistant. It provides:
+
+| Entity | Meaning |
+|---|---|
+| `sensor.wps_electricity_heating` / `_hot_water` / `_standby` | Lifetime kWh, split by an automation that switches a `utility_meter` tariff based on the compressor and the diverter valve. They can be added to the Energy dashboard. |
+| `sensor.wps_cop_heating_today` / `_hot_water_today` | Heat ÷ electricity today while the compressor runs in that mode |
+| `sensor.wps_cop_today` | All heat ÷ all electricity today, standby included |
+| `sensor.wps_cop_last_run` | COP of the last compressor run (start → 60 s after stop). Attributes: `mode`, `minutes`, `heat_kwh`, `electricity_kwh` |
+
+The heat comes from the pump's own counters (`STATS_ENERGY_OUTPUT_*`, 0.01 kWh, polled every 30 s). The pump has no flow meter that we know of, so the heat figure is probably the pump's own calculation rather than a measurement.
+
+**Database size.** The Shelly reports every few seconds; its per-phase and apparent-power sensors alone wrote ~33,000 rows per day here. Only `…_power` and `…_energy` are used, so disable the rest under **Settings → Entities**. The package also has a `recorder: exclude:` block for the helper counters and two ESP32 diagnostics; it merges with the `recorder:` section of `configuration.yaml` as long as that one has no `exclude:` of its own.
+
 
 ## Helper scripts
 
