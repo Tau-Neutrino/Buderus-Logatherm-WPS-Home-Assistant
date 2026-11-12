@@ -150,7 +150,7 @@ With an electricity meter in the pump's supply you get the real COP = heat ÷ el
 
 | Entity | Meaning |
 |---|---|
-| `sensor.wps_electricity_heating` / `_hot_water` / `_standby` | Lifetime kWh, split by an automation that switches a `utility_meter` tariff based on the compressor and the diverter valve. They can be added to the Energy dashboard. |
+| `sensor.wps_electricity_heating` / `_hot_water` / `_standby` | Lifetime kWh, split by an automation that switches a `utility_meter` tariff based on the compressor and the diverter valve. The source is the integrated Shelly power (updates every ~16 s), not the Shelly kWh counter: that one only updates once a minute, so up to a minute of energy would be booked to the wrong mode at each switch. They can be added to the Energy dashboard. |
 | `sensor.wps_cop_heating_today` / `_hot_water_today` | Heat ÷ electricity today while the compressor runs in that mode |
 | `sensor.wps_cop_today` | All heat ÷ all electricity today, standby included |
 | `sensor.wps_cop_last_run` | COP of the last compressor run (start → 60 s after stop). Attributes: `mode`, `minutes`, `heat_kwh`, `electricity_kwh` |

@@ -36,14 +36,33 @@ recorder:
       # ESP32 diagnostics (~2800 and ~1350 changes per day).
       - sensor.buderus_wps_can_frame_rate
       - sensor.haus_buderus_wps_hot_water_start_rise_timer
+      # Fast energy counter below (one row per power update, ~5000 per day); restored without the recorder.
+      - sensor.wps_electricity_fast
+
+sensor:
+  # The Shelly's kWh counter only updates once a minute. The utility meter books each update to the
+  # tariff active when it arrives, so at every tariff change up to a minute of energy landed in the
+  # wrong mode: e.g. 53 s of hot water (0.044 kWh) booked to heating, or the last ~30 s of a heating
+  # run booked to standby. That is 2–4 % of a ~1 kWh run and made the heating COP of single runs
+  # scatter between 4.8 and 5.2. The power value updates every ~16 s, and its integral matched the
+  # Shelly counter within 0.2 % (history 2026-11-12), so the split uses the integral instead.
+  - platform: integration
+    name: WPS electricity fast
+    unique_id: wps_electricity_fast
+    source: sensor.haus_wps_8k1_3em_pro_power
+    unit_prefix: k
+    unit_time: h
+    method: left
+    round: 4
+    max_sub_interval:
+      seconds: 30
 
 utility_meter:
-  # One counter, three tariffs: the automation below switches the tariff, so the Shelly's own kWh
-  # counter is split without any integration error.
+  # One counter, three tariffs: the automation below switches the tariff.
   wps_electricity:
     name: WPS electricity
     unique_id: wps_electricity
-    source: sensor.haus_wps_8k1_3em_pro_energy
+    source: sensor.wps_electricity_fast
     tariffs:
       - heating
       - hot_water
