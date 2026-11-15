@@ -138,7 +138,13 @@ template:
         icon: mdi:gauge
         state_class: measurement
         # Below 0.2 kWh electricity the ratio is mostly rounding noise.
-        availability: "{{ states('sensor.wps_electricity_heating_today') | float(0) >= 0.2 }}"
+        # The daily meters reset one after another within ~30 ms at midnight; while heat was already 0
+        # and electricity still held yesterday's value the COP read 0.0. So both must share the same
+        # last_reset.
+        availability: >
+          {{ states('sensor.wps_electricity_heating_today') | float(0) >= 0.2
+             and (state_attr('sensor.wps_heat_heating_today', 'last_reset') or '')[:10]
+                 == (state_attr('sensor.wps_electricity_heating_today', 'last_reset') or 'x')[:10] }}
         state: >
           {{ (states('sensor.wps_heat_heating_today') | float(0)
               / states('sensor.wps_electricity_heating_today') | float(1)) | round(2) }}
@@ -146,7 +152,10 @@ template:
         unique_id: wps_cop_hot_water_today
         icon: mdi:gauge
         state_class: measurement
-        availability: "{{ states('sensor.wps_electricity_hot_water_today') | float(0) >= 0.2 }}"
+        availability: >
+          {{ states('sensor.wps_electricity_hot_water_today') | float(0) >= 0.2
+             and (state_attr('sensor.wps_heat_hot_water_today', 'last_reset') or '')[:10]
+                 == (state_attr('sensor.wps_electricity_hot_water_today', 'last_reset') or 'x')[:10] }}
         state: >
           {{ (states('sensor.wps_heat_hot_water_today') | float(0)
               / states('sensor.wps_electricity_hot_water_today') | float(1)) | round(2) }}
@@ -155,7 +164,11 @@ template:
         unique_id: wps_cop_today
         icon: mdi:gauge
         state_class: measurement
-        availability: "{{ states('sensor.wps_electricity_today') | float(0) >= 0.2 }}"
+        availability: >
+          {% set r = (state_attr('sensor.wps_electricity_today', 'last_reset') or 'x')[:10] %}
+          {{ states('sensor.wps_electricity_today') | float(0) >= 0.2
+             and (state_attr('sensor.wps_heat_heating_today', 'last_reset') or '')[:10] == r
+             and (state_attr('sensor.wps_heat_hot_water_today', 'last_reset') or '')[:10] == r }}
         state: >
           {{ ((states('sensor.wps_heat_heating_today') | float(0)
                + states('sensor.wps_heat_hot_water_today') | float(0))

@@ -146,6 +146,161 @@ sections:
       - type: heading
         heading: Energy
         icon: mdi:lightning-bolt
+      # Heat produced in the last 24 h (sliding window, hours_to_show: 24): last minus first value of each counter;
+      # the counter entities themselves are not drawn. Electricity of the same 24 h from the package's lifetime
+      # counters (heating / hot water / standby) is a blue arc on the rim: arc length = electricity ÷ heat, the rest
+      # of the circle is heat from the ground. Its kWh value is bent along the arc, just inside it: an invisible ring
+      # with one tiny slice per character, each turned to the tangent by Plotly.
+      # Geometry: margins are fixed (autoexpand off) and the card is wider than tall, so the donut radius is half
+      # the plot height (330 − 10 − 34 = 286 px → 143 px) and the character spacing can be computed in px.
+      - type: custom:plotly-graph
+        raw_plotly_config: true
+        hours_to_show: 24
+        refresh_interval: 60
+        grid_options:
+          columns: full
+          rows: 6
+        config:
+          displayModeBar: false
+          staticPlot: true
+        fn: |
+          $fn ({ vars }) => {
+            vars.delta = (ys) => { const n = ys.map(Number).filter((x) => !isNaN(x)); return n.length > 1 ? Math.max(0, n[n.length - 1] - n[0]) : 0; };
+          }
+        entities:
+          - entity: sensor.haus_buderus_wps_heat_produced_heating
+            internal: true
+            fn: $fn ({ ys, vars }) => { vars.h = vars.delta(ys); }
+          - entity: sensor.haus_buderus_wps_heat_produced_hot_water
+            internal: true
+            fn: $fn ({ ys, vars }) => { vars.w = vars.delta(ys); }
+          - entity: sensor.wps_electricity_heating
+            internal: true
+            fn: $fn ({ ys, vars }) => { vars.eh = vars.delta(ys); }
+          - entity: sensor.wps_electricity_hot_water
+            internal: true
+            fn: $fn ({ ys, vars }) => { vars.ew = vars.delta(ys); }
+          - entity: sensor.wps_electricity_standby
+            internal: true
+            fn: |
+              $fn ({ ys, vars }) => {
+                vars.es = vars.delta(ys);
+                const heat = vars.h + vars.w, elec = vars.eh + vars.ew + vars.es;
+                const fmt = (n, d) => n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+                const cop = (q, e) => e >= 0.05 ? fmt(q / e, 2) : '–';
+                vars.cops = [cop(vars.h, vars.eh), cop(vars.w, vars.ew)];
+                vars.title = `Produced<br>heat 24 h<br><b>${fmt(heat, 1)} kWh</b><br><span style="font-size:13px"><b>COP ${cop(heat, elec)}</b></span>`;
+                // Arc: electricity per mode, then an invisible rest up to the heat.
+                vars.arc = [vars.eh, vars.ew, vars.es, Math.max(0, heat - elec)];
+                // Curved kWh label on a ring from 0.79 to 0.90 of the radius (see the label trace's domain/hole).
+                const rText = 143 * 0.845;
+                const chars = [...`${fmt(elec, 1)} kWh`];
+                const ctx = document.createElement('canvas').getContext('2d');
+                ctx.font = '12px sans-serif';
+                const deg = chars.map((ch) => (ctx.measureText(ch).width + 1) / rText * 180 / Math.PI);
+                const span = deg.reduce((a, b) => a + b, 0);
+                const mid = heat > 0 ? Math.min(elec / heat, 1) * 180 : 0;
+                const start = Math.max(0, mid - span / 2);
+                const show = elec > 0 && heat > 0;
+                vars.ringValues = show ? [start, ...deg, Math.max(0, 360 - start - span)] : [1];
+                vars.ringText = show ? ['', ...chars, ''] : [''];
+                vars.ringColors = vars.ringValues.map(() => 'rgba(0,0,0,0)');
+              }
+          # Heat donut.
+          - type: pie
+            hole: 0.55
+            sort: false
+            direction: clockwise
+            labels: ["Heating", "Hot water"]
+            values: $fn ({ vars }) => [vars.h, vars.w]
+            customdata: $fn ({ vars }) => vars.cops
+            marker:
+              colors: ["#ffe0b2", "#ffcdd2"]
+              line:
+                color: "#444444"
+                width: 1
+            texttemplate: "%{value:,.1f} kWh (%{percent:.1%})<br><b>COP %{customdata}</b>"
+            textposition: inside
+            insidetextorientation: tangential
+            textfont:
+              color: "#000000"
+              size: 13
+            title:
+              text: $fn ({ vars }) => vars.title
+              position: middle center
+              font:
+                size: 16
+          # Electricity arc on the rim of the slices.
+          - type: pie
+            hole: 0.9
+            sort: false
+            direction: clockwise
+            values: $fn ({ vars }) => vars.arc
+            textinfo: none
+            showlegend: false
+            marker:
+              colors: ["rgba(144,202,249,0.95)", "rgba(100,181,246,0.95)", "rgba(207,216,220,0.95)", "rgba(0,0,0,0)"]
+              line:
+                color: ["#444444", "#444444", "#444444", "rgba(0,0,0,0)"]
+                width: 1
+          # kWh label: one transparent slice per character on a ring just inside the arc
+          # (domain inset 5 % → outer radius 0.90, hole 0.79 / 0.90).
+          - type: pie
+            domain:
+              x: [0.05, 0.95]
+              y: [0.05, 0.95]
+            hole: 0.878
+            sort: false
+            direction: clockwise
+            values: $fn ({ vars }) => vars.ringValues
+            text: $fn ({ vars }) => vars.ringText
+            textinfo: text
+            textposition: inside
+            insidetextorientation: tangential
+            textfont:
+              size: 12
+              color: "#1565c0"
+            showlegend: false
+            marker:
+              colors: $fn ({ vars }) => vars.ringColors
+              line:
+                width: 0
+          # Legend entry for the arc (a pie cannot add one without a slice); the axes it brings are hidden.
+          - type: scatter
+            x: [null]
+            y: [null]
+            mode: markers
+            name: Electricity
+            marker:
+              symbol: square
+              size: 11
+              color: "#90caf9"
+              line:
+                color: "#444444"
+                width: 1
+        layout:
+          height: 330
+          separators: ".,"
+          showlegend: true
+          legend:
+            orientation: h
+            x: 0.5
+            xanchor: center
+            y: 0
+            yanchor: top
+            itemwidth: 30
+            font:
+              size: 12
+          xaxis:
+            visible: false
+          yaxis:
+            visible: false
+          margin:
+            t: 10
+            b: 34
+            l: 10
+            r: 10
+            autoexpand: false
       # Heat produced as a donut: labels follow the ring, total in the middle.
       - type: custom:plotly-graph
         raw_plotly_config: true
@@ -182,70 +337,6 @@ sections:
               size: 14
             title:
               text: $fn ({ vars }) => `Heat produced<br><b>${vars.total} kWh</b>`
-              position: middle center
-              font:
-                size: 16
-        layout:
-          height: 330
-          separators: ".,"
-          showlegend: true
-          legend:
-            orientation: h
-            x: 0.5
-            xanchor: center
-            y: -0.05
-          margin:
-            t: 10
-            b: 10
-            l: 10
-            r: 10
-      # Heat produced in the last 24 h (sliding window, hours_to_show: 24):
-      # last minus first value of each counter; the counter entities themselves are not drawn.
-      - type: custom:plotly-graph
-        raw_plotly_config: true
-        hours_to_show: 24
-        refresh_interval: 60
-        grid_options:
-          columns: full
-          rows: 6
-        config:
-          displayModeBar: false
-          staticPlot: true
-        entities:
-          - entity: sensor.haus_buderus_wps_heat_produced_heating
-            internal: true
-            fn: |
-              $fn ({ ys, vars }) => {
-                const n = ys.map(Number).filter((x) => !isNaN(x));
-                vars.h = n.length > 1 ? Math.max(0, n[n.length - 1] - n[0]) : 0;
-              }
-          - entity: sensor.haus_buderus_wps_heat_produced_hot_water
-            internal: true
-            fn: |
-              $fn ({ ys, vars }) => {
-                const n = ys.map(Number).filter((x) => !isNaN(x));
-                vars.w = n.length > 1 ? Math.max(0, n[n.length - 1] - n[0]) : 0;
-                vars.total = (vars.h + vars.w).toLocaleString('en-US', { maximumFractionDigits: 1 });
-              }
-          - type: pie
-            hole: 0.55
-            sort: false
-            direction: clockwise
-            labels: ["Heating", "Hot water"]
-            values: $fn ({ vars }) => [vars.h, vars.w]
-            marker:
-              colors: ["#ffe0b2", "#ffcdd2"]
-              line:
-                color: "#444444"
-                width: 1
-            texttemplate: "%{value:,.1f} kWh<br>%{percent:.1%}"
-            textposition: inside
-            insidetextorientation: tangential
-            textfont:
-              color: "#000000"
-              size: 14
-            title:
-              text: $fn ({ vars }) => `Heat produced 24 h<br><b>${vars.total} kWh</b>`
               position: middle center
               font:
                 size: 16
@@ -354,89 +445,16 @@ sections:
             fixedrange: true
             gridcolor: "rgba(128,128,128,0.25)"
 
-  # ---------------------------------------------------------------- COP estimated
-  # COP estimated from the datasheet curves (brine in GT10, heat pump flow GT8), only while the compressor runs,
+  # ---------------------------------------------------------------- Coefficient of performance (COP)
+  # Measured: electricity from the Shelly Pro 3EM, split into heating / hot water / standby (compressor +
+  # diverter valve); heat from the pump's counters (homeassistant/wps-energy-package.yaml).
+  # "COP last run" = heat ÷ electricity from compressor start to 60 s after the stop; "today" includes standby.
+  # Estimated: from the datasheet curves (brine in GT10, heat pump flow GT8), only while the compressor runs,
   # starting 1 min after compressor start or a switch between heating and hot water.
   - type: grid
     cards:
       - type: heading
-        heading: COP estimated (datasheet curves)
-        icon: mdi:chart-bell-curve
-      - type: tile
-        entity: sensor.haus_buderus_wps_estimated_cop
-        name: COP now (estimated)
-        icon: mdi:gauge
-        color: green
-        grid_options:
-          columns: full
-      - type: custom:plotly-graph
-        title: COP per day (estimated, runtime average)
-        hours_to_show: 7d
-        refresh_interval: auto
-        grid_options:
-          columns: full
-          rows: 6
-        config:
-          displayModeBar: false
-          staticPlot: true
-        entities:
-          - entity: sensor.haus_buderus_wps_estimated_cop_heating
-            name: Heating
-            statistic: mean
-            period: day
-            type: bar
-            texttemplate: "%{y:.2f}"
-            textposition: outside
-            marker:
-              color: "#ffe0b2"
-              line:
-                color: "#444444"
-                width: 1
-          - entity: sensor.haus_buderus_wps_estimated_cop_hot_water
-            name: Hot water
-            statistic: mean
-            period: day
-            type: bar
-            texttemplate: "%{y:.2f}"
-            textposition: outside
-            marker:
-              color: "#ffcdd2"
-              line:
-                color: "#444444"
-                width: 1
-        layout:
-          height: 320
-          separators: ".,"
-          barmode: group
-          showlegend: true
-          legend:
-            orientation: h
-            x: 0
-            y: 1.08
-          margin:
-            t: 40
-            b: 40
-            l: 50
-            r: 10
-          xaxis:
-            tickformat: "%b %d"
-            dtick: 86400000
-            fixedrange: true
-          yaxis:
-            title:
-              text: COP
-            rangemode: tozero
-            fixedrange: true
-            gridcolor: "rgba(128,128,128,0.25)"
-
-  # ---------------------------------------------------------------- COP measured
-  # Measured: electricity from the Shelly Pro 3EM, split into heating / hot water / standby (compressor +
-  # diverter valve); heat from the pump's counters (homeassistant/wps-energy-package.yaml).
-  # "COP last run" = heat ÷ electricity from compressor start to 60 s after the stop; "today" includes standby.
-  - type: grid
-    cards:
-      - type: heading
-        heading: COP measured
+        heading: Coefficient of performance
         icon: mdi:flash
       - type: tile
         entity: sensor.haus_wps_8k1_3em_pro_power
@@ -468,12 +486,16 @@ sections:
         name: COP (hot water)
         icon: mdi:gauge
         color: blue
-      # COP per day: last counter value per day (statistic: state, period: day), difference to the previous day,
-      # heat ÷ electricity. No bar without a value for the previous day (installation day: electricity only since installation).
+      # COP per day, measured vs. estimated, as lines.
+      # Measured (strong line, outlined pastel marker with halo, value below the marker): last counter value per
+      # day (statistic: state, period: day), difference to the previous day, heat ÷ electricity. No point without
+      # a value for the previous day (installation day: electricity only since installation).
+      # Estimated (faint dotted line): daily mean of the runtime estimate (statistic: mean). The tinted area
+      # between the two lines is the gap between measurement and datasheet.
       # raw_plotly_config: otherwise the card forces a date axis via hours_to_show and the
-      # category bars ("Nov 11") end up outside the visible range.
+      # category points ("Nov 11") end up outside the visible range.
       - type: custom:plotly-graph
-        title: COP per day (measured)
+        title: COP per day (measured vs. estimated)
         raw_plotly_config: true
         hours_to_show: 8d
         refresh_interval: auto
@@ -487,9 +509,13 @@ sections:
           $fn ({ vars }) => {
             const key = (d) => { const t = new Date(d); return t.getFullYear() + '-' + (t.getMonth() + 1) + '-' + t.getDate(); };
             vars.key = key;
-            vars.daily = (xs, ys) => {
+            vars.byDay = (xs, ys) => {
               const m = {};
               xs.forEach((x, i) => { const n = Number(ys[i]); if (!isNaN(n)) m[key(x)] = n; });
+              return m;
+            };
+            vars.daily = (xs, ys) => {
+              const m = vars.byDay(xs, ys);
               const out = {};
               Object.keys(m).forEach((k) => {
                 const [y, mo, d] = k.split('-').map(Number);
@@ -500,6 +526,16 @@ sections:
             };
           }
         entities:
+          - entity: sensor.haus_buderus_wps_estimated_cop_heating
+            statistic: mean
+            period: day
+            internal: true
+            fn: $fn ({ xs, ys, vars }) => { vars.sh = vars.byDay(xs, ys); }
+          - entity: sensor.haus_buderus_wps_estimated_cop_hot_water
+            statistic: mean
+            period: day
+            internal: true
+            fn: $fn ({ xs, ys, vars }) => { vars.sw = vars.byDay(xs, ys); }
           - entity: sensor.haus_buderus_wps_heat_produced_heating
             statistic: state
             period: day
@@ -531,68 +567,231 @@ sections:
                 const days = [];
                 for (let i = 6; i >= 0; i--) { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i); days.push(d); }
                 const r = (q, e) => (q !== undefined && e !== undefined && e >= 0.2) ? Math.round(q / e * 100) / 100 : null;
+                const m = (v) => v === undefined ? null : Math.round(v * 100) / 100;
                 vars.x = days.map((d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
                 vars.h = days.map((d) => r(vars.qh[vars.key(d)], vars.eh[vars.key(d)]));
                 vars.w = days.map((d) => r(vars.qw[vars.key(d)], vars.ew[vars.key(d)]));
                 vars.t = days.map((d) => { const k = vars.key(d); const q = (vars.qh[k] ?? NaN) + (vars.qw[k] ?? NaN); return isNaN(q) ? null : r(q, vars.et[k]); });
+                vars.sh_d = days.map((d) => m(vars.sh[vars.key(d)]));
+                vars.sw_d = days.map((d) => m(vars.sw[vars.key(d)]));
+                // 7-day averages, energy-weighted (sum of heat ÷ sum of electricity over the days shown, not the
+                // mean of the daily COPs), so a day with little hot water does not count as much as a full day.
+                const ks = days.map(vars.key);
+                const avg = (qf, ef) => {
+                  let q = 0, e = 0;
+                  ks.forEach((k) => { const a = qf(k), b = ef(k); if (a !== undefined && b !== undefined) { q += a; e += b; } });
+                  return e >= 0.2 ? Math.round(q / e * 100) / 100 : null;
+                };
+                vars.avg = [
+                  ['#ffb74d', avg((k) => vars.qh[k], (k) => vars.eh[k])],
+                  ['#e57373', avg((k) => vars.qw[k], (k) => vars.ew[k])],
+                  ['#81c784', avg((k) => (vars.qh[k] === undefined || vars.qw[k] === undefined) ? undefined : vars.qh[k] + vars.qw[k], (k) => vars.et[k])],
+                ].filter((a) => a[1] !== null);
+                // y range: labels sit below the markers, so leave room at the bottom.
+                const all = [...vars.h, ...vars.w, ...vars.t, ...vars.sh_d, ...vars.sw_d, ...vars.avg.map((a) => a[1])].filter((v) => v !== null);
+                vars.yr = all.length ? [Math.max(0, Math.floor((Math.min(...all) - 0.5) * 2) / 2), Math.max(...all) + 0.3] : [0, 5];
               }
+          # Estimated (faint dotted) + tinted gap to the measured line: each gap trace is an invisible copy of
+          # the measured line that fills back to the estimated trace right before it (fill: tonexty).
+          - x: $fn ({ vars }) => vars.x
+            y: $fn ({ vars }) => vars.sh_d
+            name: estimated
+            legendrank: 3
+            legendgroup: heating
+            type: scatter
+            mode: lines
+            line:
+              color: "rgba(255,152,0,0.15)"
+              width: 1.5
+              dash: dot
           - x: $fn ({ vars }) => vars.x
             y: $fn ({ vars }) => vars.h
-            name: Heating
-            type: bar
-            texttemplate: "%{y:.2f}"
-            textposition: outside
+            legendgroup: heating
+            showlegend: false
+            type: scatter
+            mode: lines
+            line:
+              width: 0
+            fill: tonexty
+            fillcolor: "rgba(255,183,77,0.10)"
+          - x: $fn ({ vars }) => vars.x
+            y: $fn ({ vars }) => vars.sw_d
+            name: estimated
+            legendrank: 4
+            legendgroup: hot_water
+            type: scatter
+            mode: lines
+            line:
+              color: "rgba(229,57,53,0.15)"
+              width: 1.5
+              dash: dot
+          - x: $fn ({ vars }) => vars.x
+            y: $fn ({ vars }) => vars.w
+            legendgroup: hot_water
+            showlegend: false
+            type: scatter
+            mode: lines
+            line:
+              width: 0
+            fill: tonexty
+            fillcolor: "rgba(229,115,115,0.09)"
+          # Halos behind the measured markers (drawn first, so they never cover a line).
+          - x: $fn ({ vars }) => vars.x
+            y: $fn ({ vars }) => vars.h
+            legendgroup: heating
+            showlegend: false
+            type: scatter
+            mode: markers
             marker:
+              size: 22
+              color: "#ffb74d"
+              opacity: 0.35
+          - x: $fn ({ vars }) => vars.x
+            y: $fn ({ vars }) => vars.w
+            legendgroup: hot_water
+            showlegend: false
+            type: scatter
+            mode: markers
+            marker:
+              size: 22
+              color: "#e57373"
+              opacity: 0.35
+          - x: $fn ({ vars }) => vars.x
+            y: $fn ({ vars }) => vars.t
+            legendgroup: total
+            showlegend: false
+            type: scatter
+            mode: markers
+            marker:
+              size: 22
+              color: "#81c784"
+              opacity: 0.35
+          # Measured: line in the deeper shade, pastel marker with the bars' #444 outline. Values below the
+          # markers (the estimate is almost always higher), except heating: above, clear of the total line below it.
+          # One marker shape per mode: heating diamond, hot water circle, total square.
+          - x: $fn ({ vars }) => vars.x
+            y: $fn ({ vars }) => vars.h
+            name: "Heating: measured"
+            legendrank: 1
+            legendgroup: heating
+            type: scatter
+            mode: lines+markers+text
+            texttemplate: "%{y:.2f}"
+            textposition: top center
+            textfont:
+              size: 10
+            line:
+              color: "#ffb74d"
+              width: 2.5
+            marker:
+              size: 11
+              symbol: diamond
               color: "#ffe0b2"
               line:
                 color: "#444444"
-                width: 1
+                width: 1.5
           - x: $fn ({ vars }) => vars.x
             y: $fn ({ vars }) => vars.w
-            name: Hot water
-            type: bar
+            name: "Hot water: measured"
+            legendrank: 2
+            legendgroup: hot_water
+            type: scatter
+            mode: lines+markers+text
             texttemplate: "%{y:.2f}"
-            textposition: outside
+            textposition: bottom center
+            textfont:
+              size: 10
+            line:
+              color: "#e57373"
+              width: 2.5
             marker:
+              size: 11
+              symbol: circle
               color: "#ffcdd2"
               line:
                 color: "#444444"
-                width: 1
+                width: 1.5
           - x: $fn ({ vars }) => vars.x
             y: $fn ({ vars }) => vars.t
             name: Total incl. standby
-            type: bar
+            legendrank: 5
+            legendgroup: total
+            type: scatter
+            mode: lines+markers+text
             texttemplate: "%{y:.2f}"
-            textposition: outside
+            textposition: bottom center
+            textfont:
+              size: 10
+            line:
+              color: "#81c784"
+              width: 2.5
             marker:
+              size: 11
+              symbol: square
               color: "#c8e6c9"
               line:
                 color: "#444444"
-                width: 1
+                width: 1.5
         layout:
-          height: 320
+          height: 340
           separators: ".,"
-          barmode: group
           showlegend: true
+          # Legend in two columns (heating | hot water): measured in the first row, estimated in the second,
+          # total in the third; the order comes from legendrank, not from the trace (drawing) order.
           legend:
             orientation: h
+            traceorder: normal
+            entrywidth: 0.5
+            entrywidthmode: fraction
             x: 0
-            y: 1.08
+            y: 1.02
+            yanchor: bottom
           margin:
-            t: 40
+            t: 75
             b: 40
             l: 50
-            r: 10
+            r: 50
           xaxis:
             type: category
             fixedrange: true
           yaxis:
             title:
               text: COP
-            # Fixed scale: highest bar + 20 % room for the label above the bar.
-            range: $fn ({ vars }) => [0, Math.max(1, ...[...vars.h, ...vars.w, ...vars.t].filter((v) => v !== null)) * 1.2]
+            range: $fn ({ vars }) => vars.yr
             fixedrange: true
             gridcolor: "rgba(128,128,128,0.25)"
+          # Second y-axis on the right, same range, only as the scale for the 7-day averages.
+          yaxis2:
+            overlaying: y
+            side: right
+            range: $fn ({ vars }) => vars.yr
+            fixedrange: true
+            showgrid: false
+            showticklabels: false
+            showline: true
+            linecolor: "rgba(128,128,128,0.6)"
+            ticks: outside
+            ticklen: 3
+            tickcolor: "rgba(128,128,128,0.6)"
+          # 7-day averages: a triangle in the mode's colour outside the right axis, tip on the axis at the exact
+          # value, the number right of it (numbers pushed apart when two averages are closer than ~7 % of the axis).
+          annotations: |
+            $fn ({ vars }) => {
+              const gap = (vars.yr[1] - vars.yr[0]) * 0.07;
+              const s = [...vars.avg].sort((a, b) => a[1] - b[1]);
+              const ly = [];
+              s.forEach((a, i) => ly.push(i && ly[i - 1] + gap > a[1] ? ly[i - 1] + gap : a[1]));
+              const out = [{ x: 1, y: 0, xref: 'paper', yref: 'paper', xanchor: 'left', yanchor: 'top', yshift: -4,
+                             text: 'Ø 7 d', showarrow: false, font: { size: 10, color: '#888888' } }];
+              s.forEach((a, i) => {
+                // Same font size and yanchor for both, so triangle and number share the same vertical centre.
+                out.push({ x: 1, y: a[1], xref: 'paper', yref: 'y', xanchor: 'left', yanchor: 'middle', text: '◀',
+                           showarrow: false, font: { size: 12, color: a[0] } });
+                out.push({ x: 1, y: ly[i], xref: 'paper', yref: 'y', xanchor: 'left', yanchor: 'middle', xshift: 12,
+                           text: '<b>' + a[1].toFixed(2) + '</b>', showarrow: false, font: { size: 12 } });
+              });
+              return out;
+            }
 
   # ---------------------------------------------------------------- Heating curve
   - type: grid
@@ -780,21 +979,65 @@ sections:
       - type: heading
         heading: Last 24 hours
         icon: mdi:chart-timeline-variant
-      - type: history-graph
-        hours_to_show: 24
+      # plotly-graph instead of the built-in history graph: only it can start a series hidden
+      # (visible: legendonly). "Brine out" is off by default; a tap on its legend entry shows it.
+      - type: custom:plotly-graph
+        hours_to_show: 24h
+        refresh_interval: auto
         grid_options:
           columns: full
+          rows: 6
+        config:
+          displayModeBar: false
+        defaults:
+          entity:
+            line:
+              width: 1.5
         entities:
           - entity: sensor.haus_buderus_wps_heating_flow_gt1
             name: Flow
+            line:
+              color: "#ffb74d"
           - entity: sensor.haus_buderus_wps_hot_water_display
             name: Hot water
+            line:
+              color: "#e57373"
           - entity: sensor.haus_buderus_wps_outdoor_gt2
             name: Outdoor
+            line:
+              color: "#90a4ae"
           - entity: sensor.haus_buderus_wps_brine_in_gt10
             name: Brine in
+            line:
+              color: "#4dd0e1"
           - entity: sensor.haus_buderus_wps_brine_out_gt11
             name: Brine out
+            visible: legendonly
+            line:
+              color: "#64b5f6"
+        layout:
+          height: 300
+          showlegend: true
+          legend:
+            orientation: h
+            x: 0
+            y: 1.02
+            yanchor: bottom
+          margin:
+            t: 30
+            b: 35
+            l: 45
+            r: 10
+          # Single-line time labels; plotly's default adds the date as a second line, which the margin cut off.
+          xaxis:
+            fixedrange: true
+            tickformat: "%H:%M"
+            automargin: true
+          yaxis:
+            title:
+              text: °C
+            fixedrange: true
+            gridcolor: "rgba(128,128,128,0.25)"
       - type: heading
         heading: Operating data
         icon: mdi:cog-outline

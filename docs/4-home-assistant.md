@@ -46,10 +46,9 @@ The entity ID is derived from the `label` in `tools/monitor_params.csv`:
 |---|---|
 | **Current status** | Tiles: compressor, operating mode, flow with setpoint, outdoor temperature. Hot water **gauge** with start/stop range and setpoint. |
 | **Energy** | Donut of the produced heat (heating vs. hot water, lifetime), a second donut for the **last 24 h**, heat and electricity **per day** |
-| **COP estimated (datasheet curves)** | COP estimated from the datasheet curves (brine in GT10, flow GT8): current value and mean per day |
-| **COP measured** | Needs an electricity meter and the package below: power, electricity today, COP of the last run / today / per mode, measured COP per day |
+| **Coefficient of performance** | Power, electricity today, COP of the last run / today / per mode (needs an electricity meter and the package below). Line chart of the COP per day: measured values as strong lines, the COP estimated from the datasheet curves (brine in GT10, flow GT8) as faint dotted lines, the gap between them tinted. On a second y-axis on the right, triangles mark the 7-day average per mode (heat ÷ electricity over the 7 days) |
 | **Heating curve** | The heating curve as configured in the pump, with today's operating point |
-| **Last 24 hours** | History graph of the temperatures; **Operating data**: compressor runtime and starts, operating mode over 24 h |
+| **Last 24 hours** | Temperature chart (brine out hidden by default, tap its legend entry to show it); **Operating data**: compressor runtime and starts, operating mode over 24 h |
 
 Screenshots of the reference installation (phone, dark theme):
 
