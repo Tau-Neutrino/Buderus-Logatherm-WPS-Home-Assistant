@@ -93,6 +93,11 @@ data/                        raw element table dump of that pump (reference)
 docs/                        this documentation
 ```
 
+## Related projects
+
+- **[FHEM module 26_KM273](https://forum.fhem.de/index.php?topic=47508.0)** by mike3436 – the origin of the protocol knowledge, see above.
+- **[reinlemmens/buderus-wps-ha](https://github.com/reinlemmens/buderus-wps-ha)** – a native Home Assistant integration (HACS) for the same pumps, using a USB CAN adapter (USBtin) at the Home Assistant machine instead of an ESP32. It can also **write**: extra hot water, hot water mode, heating season mode, holiday mode; its docs list which writes the pump accepts and which it ignores. Its element table (1792 parameters) is identical to the one in this repository, so its index numbers apply here as well. Choose it if you want control and have Home Assistant near the pump; choose this project for a Wi-Fi adapter, the heat/COP analysis and the dashboard.
+
 ## Status and safety
 
 - Tested on a **Logatherm WPS 8K-1** (controller HMC10-1). Other WPS-1 / WPS K-1 models and IVT Greenline pumps with the same controller generation very likely work too. Check the FHEM thread for your model.
