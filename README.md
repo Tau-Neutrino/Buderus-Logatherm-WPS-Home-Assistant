@@ -5,6 +5,7 @@ Read a **Buderus Logatherm WPS** ground-source heat pump (developed and tested o
 - an **ESP32** with its built-in CAN controller and a **SN65HVD230** transceiver (about €10 of hardware), powered from the pump's own 12 V,
 - **ESPHome** firmware that reads the parameters of the pump controller (the same requests a Buderus KM200 gateway or FHEM uses),
 - temperatures, compressor state, operating mode, hot water thresholds, heating curve, energy and runtime counters, an estimated COP,
+- optionally a **Shelly Pro 3EM** (or any electricity meter) for the **measured COP**: per run, per day, heating vs. hot water vs. standby, with 7-day averages,
 - a ready-made **Home Assistant dashboard**.
 
 No cloud, no KM200, no changes to the pump. The firmware only **reads**.
@@ -22,9 +23,9 @@ No cloud, no KM200, no changes to the pump. The firmware only **reads**.
 
 ## What it looks like
 
-| Home Assistant dashboard | | | | The adapter |
-|---|---|---|---|---|
-| <img src="docs/Pictures/HA_example_1.png" width="170" alt="Status, hot water, energy"> | <img src="docs/Pictures/HA_example_2.png" width="170" alt="Heat produced in 24 h and per day"> | <img src="docs/Pictures/HA_example_3.png" width="170" alt="Estimated and measured COP"> | <img src="docs/Pictures/HA_example_4.png" width="170" alt="Heating curve and compressor statistics"> | <img src="docs/Pictures/Hardware_wiring.jpg" width="200" alt="ESP32 + SN65HVD230 + buck converter"> |
+| Home Assistant dashboard | | | | | The adapter |
+|---|---|---|---|---|---|
+| <img src="docs/Pictures/HA_example_1.png" width="150" alt="Status, hot water gauge, heat and electricity in the last 24 h"> | <img src="docs/Pictures/HA_example_2.png" width="150" alt="Lifetime heat, heat and electricity per day"> | <img src="docs/Pictures/HA_example_3.png" width="150" alt="Measured COP, COP per day vs. estimate, 7-day averages"> | <img src="docs/Pictures/HA_example_4.png" width="150" alt="Heating curve with switching band"> | <img src="docs/Pictures/HA_example_5.png" width="150" alt="Temperatures of the last 24 h, compressor runtimes and starts"> | <img src="docs/Pictures/Hardware_wiring.jpg" width="180" alt="ESP32 + SN65HVD230 + buck converter"> |
 
 ## How it works
 
@@ -51,6 +52,7 @@ No cloud, no KM200, no changes to the pump. The firmware only **reads**.
 | 4 | [Home Assistant](docs/4-home-assistant.md) | Entities, dashboard, examples, helper tools |
 | 5 | [Protocol reference](docs/5-protocol.md) | KM273 CAN IDs, read requests, table format, broadcast frames |
 | 6 | [Pump behaviour](docs/6-pump-behaviour.md) | What we learned from the data: hot water logic, heating thresholds, display offsets |
+| 7 | [Electricity meter & measured COP](docs/7-electricity-cop.md) | Optional: Shelly Pro 3EM wiring, HA integration, energy package, real COP per run/day/mode |
 
 Quick start for the impatient (after the hardware is built and connected, see steps 1 and 2):
 
@@ -85,6 +87,7 @@ tools/
 homeassistant/
   wps-dashboard-view.yaml    the "Heat pump" dashboard view
   heatpump-status-card.yaml  example: compact status card for another view
+  wps-energy-package.yaml    optional HA package: electricity split + measured COP (Shelly Pro 3EM)
 km273_dictionary.csv         element table of a WPS 8K-1 (1792 parameters) + labels and notes
 data/                        raw element table dump of that pump (reference)
 docs/                        this documentation

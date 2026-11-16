@@ -45,17 +45,19 @@ The entity ID is derived from the `label` in `tools/monitor_params.csv`:
 | Section | Content |
 |---|---|
 | **Current status** | Tiles: compressor, operating mode, flow with setpoint, outdoor temperature. Hot water **gauge** with start/stop range and setpoint. |
-| **Energy** | Donut of the produced heat (heating vs. hot water, lifetime), a second donut for the **last 24 h**, heat and electricity **per day** |
+| **Energy** | Donut of the heat produced in the **last 24 h** (heating vs. hot water, with the electricity as outer ring and the COP per mode when a meter is installed), a second donut for the pump's **lifetime**, heat and electricity **per day** |
 | **Coefficient of performance** | Power, electricity today, COP of the last run / today / per mode (needs an electricity meter and the package below). Line chart of the COP per day: measured values as strong lines, the COP estimated from the datasheet curves (brine in GT10, flow GT8) as faint dotted lines, the gap between them tinted. On a second y-axis on the right, triangles mark the 7-day average per mode (heat ÷ electricity over the 7 days) |
 | **Heating curve** | The heating curve as configured in the pump, with today's operating point |
 | **Last 24 hours** | Temperature chart (brine out hidden by default, tap its legend entry to show it); **Operating data**: compressor runtime and starts, operating mode over 24 h |
 
 Screenshots of the reference installation (phone, dark theme):
 
-| Status, hot water, energy | Heat 24 h and per day | Estimated and measured COP | Heating curve, operating data |
-|---|---|---|---|
-| <img src="Pictures/HA_example_1.png" alt="Status, hot water gauge, lifetime heat donut" width="200"> | <img src="Pictures/HA_example_2.png" alt="Heat produced in the last 24 h, heat and electricity per day" width="200"> | <img src="Pictures/HA_example_3.png" alt="Estimated COP per day, measured power, electricity and COP" width="200"> | <img src="Pictures/HA_example_4.png" alt="Heating curve with switching band, compressor runtimes and starts" width="200"> |
-| Compressor, mode, flow with setpoint, brine. Hot water gauge with start/stop range. Heat produced over the pump's lifetime. | Heat produced in the last 24 h; heat and electricity per day. | COP estimated from the datasheet curves; measured power, electricity and COP (last run, today, per mode, per day). | The heating curve with today's operating point and the current start/stop band. Compressor runtimes and starts. (The 24 h history graphs are not shown.) |
+| Status, hot water, last 24 h | Heat per day | Coefficient of performance | Heating curve | Last 24 hours, operating data |
+|---|---|---|---|---|
+| <img src="Pictures/HA_example_1.png" alt="Status tiles, hot water gauge, heat and electricity of the last 24 h" width="170"> | <img src="Pictures/HA_example_2.png" alt="Lifetime heat donut, heat and electricity per day" width="170"> | <img src="Pictures/HA_example_3.png" alt="Measured power, electricity and COP; COP per day measured vs. estimated with 7-day averages" width="170"> | <img src="Pictures/HA_example_4.png" alt="Heating curve with switching band and operating point" width="170"> | <img src="Pictures/HA_example_5.png" alt="Temperatures of the last 24 h, compressor runtimes and starts, operating mode" width="170"> |
+| Compressor, mode, flow with setpoint, brine. Hot water gauge with start/stop range. Heat of the last 24 h with the electricity as outer ring and the COP per mode. | Heat produced over the pump's lifetime; heat and electricity per day. | Measured power, electricity and COP (last run, today, per mode). COP per day: measured vs. estimated from the datasheet curves, 7-day averages as triangles. | The heating curve with today's operating point and the current start/stop band; curve end points, parallel offset, flow setpoint. | Flow, hot water, outdoor and brine temperatures; compressor runtimes and starts; operating mode over 24 h. |
+
+The COP and electricity parts need an electricity meter, see [7 · Electricity meter and measured COP](7-electricity-cop.md).
 
 ### Requirements
 
@@ -145,7 +147,7 @@ Add `sensor.buderus_wps_heat_produced_heating` and `…_hot_water` under **Setti
 
 ### Electricity and measured COP (Shelly Pro 3EM)
 
-With an electricity meter in the pump's supply you get the real COP = heat ÷ electricity. [`homeassistant/wps-energy-package.yaml`](../homeassistant/wps-energy-package.yaml) is a ready-made [package](https://www.home-assistant.io/docs/configuration/packages/) for a Shelly Pro 3EM. Copy it to `/config/packages/`, adjust the entity IDs and restart Home Assistant. It provides:
+With an electricity meter in the pump's supply you get the real COP = heat ÷ electricity. [`homeassistant/wps-energy-package.yaml`](../homeassistant/wps-energy-package.yaml) is a ready-made [package](https://www.home-assistant.io/docs/configuration/packages/) for a Shelly Pro 3EM. **Step-by-step guide (wiring, integration, package, how it works): [7 · Electricity meter and measured COP](7-electricity-cop.md).** In short: copy it to `/config/packages/`, adjust the entity IDs and restart Home Assistant. It provides:
 
 | Entity | Meaning |
 |---|---|

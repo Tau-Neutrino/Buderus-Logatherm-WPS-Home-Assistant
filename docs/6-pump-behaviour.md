@@ -78,4 +78,4 @@ It is only published while the compressor runs and from 60 s after a start or a 
 ## Energy counters
 
 - `STATS_ENERGY_OUTPUT_HEATING` + `_DHW` (raw × 0.01 kWh) add up to the total, and the averages match the 8 kW rating.
-- The pump only reports produced heat. For electricity and a real COP, add a meter in the supply.
+- The pump only reports produced heat. For electricity and a real COP, add a meter in the supply: [7 · Electricity meter and measured COP](7-electricity-cop.md).

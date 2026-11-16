@@ -147,7 +147,7 @@ Besides one sensor per CSV line, the generator adds:
 | **CAN frame rate** | Diagnostics: received frames per second |
 | **CAN sniffer log** | Switch: logs every new/changed frame (off by default) |
 
-The COP is an **estimate** from the datasheet (`km273_cop.h`: COP over brine temperature for flow 35/45/55 °C), because the WPS has no electrical power measurement. For a real COP you need an electricity meter in the pump's supply.
+The COP is an **estimate** from the datasheet (`km273_cop.h`: COP over brine temperature for flow 35/45/55 °C), because the WPS has no electrical power measurement. For a real COP you need an electricity meter in the pump's supply, see [7 · Electricity meter and measured COP](7-electricity-cop.md).
 
 ### How the poller works
 
